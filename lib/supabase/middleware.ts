@@ -27,25 +27,24 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  // Do not run code between createServerClient and
-  // supabase.auth.getUser(). A simple mistake could make it very hard to debug
-  // issues with users being randomly logged out.
-
+  // IMPORTANT: Do not run code between createServerClient and
+  // supabase.auth.getUser().
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
   // Protect routes - allow public landing page or bypass if demo cookie exists
-  const isDemo = request.cookies.get('kms_demo_profile')
+  const isDemoCookie = request.cookies.get('kms_demo_profile')
   
   if (
     !user &&
-    !isDemo &&
+    !isDemoCookie &&
     request.nextUrl.pathname !== '/' &&
     !request.nextUrl.pathname.startsWith('/login') &&
     !request.nextUrl.pathname.startsWith('/auth') &&
     !request.nextUrl.pathname.startsWith('/_next') &&
-    !request.nextUrl.pathname.startsWith('/api')
+    !request.nextUrl.pathname.startsWith('/api') &&
+    !request.nextUrl.pathname.startsWith('/favicon.ico')
   ) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'

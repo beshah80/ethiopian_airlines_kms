@@ -29,8 +29,8 @@ export default function LoginPage() {
         };
 
         const profile = mockProfiles[loginEmail];
-        // Set cookie manually for middleware visibility
-        document.cookie = `kms_demo_profile=${JSON.stringify(profile)}; path=/; max-age=3600`;
+        // Set cookie manually for middleware visibility - encode to handle special characters
+        document.cookie = `kms_demo_profile=${encodeURIComponent(JSON.stringify(profile))}; path=/; max-age=86400; SameSite=Lax`;
         // Also set in localStorage for client components
         localStorage.setItem('kms_demo_profile', JSON.stringify(profile));
         
