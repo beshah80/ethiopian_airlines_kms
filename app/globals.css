@@ -123,8 +123,66 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-chakra-petch), 'Chakra Petch', sans-serif !important;
   }
-  html {
-    @apply font-sans;
+html {
+    font-family: var(--font-chakra-petch), 'Chakra Petch', sans-serif !important;
+    scroll-behavior: smooth;
   }
+  
+  /* Apply Chakra Petch to all text elements */
+  h1, h2, h3, h4, h5, h6, p, span, div, a, button, input, label, textarea, select, li {
+    font-family: var(--font-chakra-petch), 'Chakra Petch', sans-serif !important;
+  }
+}
+
+/* Force hand cursor on ALL interactive elements - highest priority */
+button,
+a,
+[role="button"],
+[type="button"],
+[type="submit"],
+[type="reset"],
+label,
+.cursor-pointer {
+  cursor: pointer !important;
+}
+
+/* Shadcn Button component */
+[class*="Button"],
+[data-slot="button"],
+button[data-variant],
+.btn,
+.shadcn-button {
+  cursor: pointer !important;
+}
+
+/* Links */
+a,
+a:link,
+a:visited,
+a:hover,
+a:active,
+[href],
+.link {
+  cursor: pointer !important;
+}
+
+/* Input fields get text cursor */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="search"],
+textarea,
+select,
+[contenteditable] {
+  cursor: text !important;
+}
+
+/* Disabled elements */
+button:disabled,
+a:disabled,
+[disabled] {
+  cursor: not-allowed !important;
 }

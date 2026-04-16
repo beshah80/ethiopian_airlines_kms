@@ -39,3 +39,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# User requested ignores
+AGENTS.md
+Analysis of the Current KM.md
+CLAUDE.md
+Implementation_Plan.md
+Instructions.md
+KM.md
+Questionnaire.md
