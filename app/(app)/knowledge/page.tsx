@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { BookOpen, Plus, Search } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 type Article = {
   id: string;
@@ -80,120 +81,131 @@ export default function KnowledgeIndexPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
-        <div>
-          <div className="inline-flex items-center gap-2 text-amber-700 bg-amber-50 border border-amber-100 px-3 py-1 rounded-full text-xs font-medium mb-3">
-            <BookOpen className="h-3.5 w-3.5" />
-            Explicit knowledge repository
+    <div className="min-h-screen bg-slate-50/30">
+      <main className="container mx-auto px-4 py-12 max-w-7xl">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12">
+          <div className="space-y-4">
+            <div className="inline-flex items-center gap-2 text-amber-600 bg-amber-500/5 border border-amber-500/20 px-4 py-1.5 rounded-xl text-xs font-black uppercase tracking-widest">
+              <BookOpen className="h-4 w-4" />
+              Intelligence Repository
+            </div>
+            <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight italic uppercase italic">
+              Knowledge <span className="text-amber-500 underline decoration-amber-500/20 underline-offset-8">Base</span>
+            </h1>
+            <p className="text-slate-500 font-medium max-w-2xl text-lg">
+              Search and access official SOPs, best practices, and safety protocols. Verified and synchronized for global operations.
+            </p>
           </div>
-          <h1 className="text-3xl font-bold text-slate-900">Knowledge Base</h1>
-          <p className="text-slate-600 mt-1">
-            SOPs, best practices, safety notes, training materials — bilingual where possible.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
           <Link href="/knowledge/new">
-            <Button className="bg-amber-600 hover:bg-amber-700 gap-2">
-              <Plus className="h-4 w-4" />
-              New article
+            <Button className="bg-slate-900 hover:bg-slate-800 text-white font-black px-8 h-14 rounded-2xl shadow-xl shadow-slate-900/10 gap-2 overflow-hidden relative group">
+              <div className="absolute inset-0 bg-amber-500 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+              <Plus className="h-5 w-5 relative z-10 group-hover:text-slate-950 transition-colors" />
+              <span className="relative z-10 group-hover:text-slate-950 transition-colors uppercase italic">New Intelligence</span>
             </Button>
           </Link>
         </div>
-      </div>
 
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="text-base">Search & filters</CardTitle>
-          <CardDescription>Fast search by title (we’ll add full-text ranking next).</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-            <div className="md:col-span-2 relative">
-              <Search className="h-4 w-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <Input
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                placeholder="Search by title (e.g. 737 hydraulic, passenger handling)…"
-                className="pl-9"
-              />
+        {/* Search Command Center */}
+        <Card className="mb-12 border-none shadow-2xl shadow-slate-200/50 rounded-[2.5rem] overflow-hidden bg-white">
+          <div className="p-2 md:p-3">
+            <div className="flex flex-col md:flex-row gap-2">
+              <div className="flex-1 relative">
+                <Search className="h-5 w-5 text-slate-400 absolute left-6 top-1/2 -translate-y-1/2" />
+                <Input
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  placeholder="Query by title, fleet type, or protocol ID (e.g. '787 Hydraulic')..."
+                  className="h-16 pl-14 pr-6 bg-slate-50 border-none rounded-3xl text-slate-900 font-bold placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-amber-500/20 text-base"
+                />
+              </div>
+              <div className="flex gap-2">
+                <select
+                  className="h-16 px-6 bg-slate-50 border-none rounded-3xl text-sm font-black uppercase tracking-widest text-slate-600 cursor-pointer focus:ring-2 focus:ring-amber-500/20"
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                >
+                  <option value="all">All Categories</option>
+                  <option value="sop">Official SOP</option>
+                  <option value="lesson_learned">AAR Lesson</option>
+                  <option value="best_practice">Best Practice</option>
+                  <option value="safety">Safety Alert</option>
+                </select>
+                <Button 
+                  onClick={applyFilters}
+                  className="h-16 px-10 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black rounded-3xl uppercase italic tracking-widest"
+                >
+                  Execute Search
+                </Button>
+              </div>
             </div>
-            <select
-              className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-            >
-              <option value="all">All categories</option>
-              <option value="sop">SOP</option>
-              <option value="lesson_learned">Lesson learned</option>
-              <option value="best_practice">Best practice</option>
-              <option value="innovation">Innovation</option>
-              <option value="safety">Safety</option>
-              <option value="training">Training</option>
-              <option value="general">General</option>
-            </select>
-            <select
-              className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm"
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-            >
-              <option value="published">Published</option>
-              <option value="draft">Draft</option>
-              <option value="review">In review</option>
-              <option value="archived">Archived</option>
-              <option value="all">All statuses</option>
-            </select>
           </div>
-
-          <div className="mt-3 flex items-center justify-end">
-            <Button variant="outline" onClick={applyFilters}>
-              Apply
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {loading ? (
-        <p className="text-slate-600">Loading articles…</p>
-      ) : articles.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <p className="text-slate-600">No articles found. Create the first one.</p>
-            <div className="mt-4">
-              <Link href="/knowledge/new">
-                <Button className="bg-amber-600 hover:bg-amber-700">Create article</Button>
-              </Link>
-            </div>
-          </CardContent>
         </Card>
-      ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {articles.map((a) => (
-            <Link key={a.id} href={`/knowledge/${a.id}`} className="block">
-              <Card className="h-full hover:shadow-md transition-shadow">
-                <CardHeader>
-                  <div className="flex items-start justify-between gap-3">
-                    <CardTitle className="text-base leading-snug line-clamp-2">{a.title}</CardTitle>
-                    <Badge variant="secondary" className="shrink-0">
-                      {a.status}
-                    </Badge>
+
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-24 space-y-4">
+            <div className="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
+            <p className="text-slate-400 font-black uppercase tracking-widest text-xs">Accessing Archives...</p>
+          </div>
+        ) : articles.length === 0 ? (
+          <div className="py-24 text-center">
+            <div className="w-20 h-20 bg-slate-100 rounded-3xl flex items-center justify-center mx-auto mb-6">
+              <Search className="h-10 w-10 text-slate-300" />
+            </div>
+            <h3 className="text-2xl font-black text-slate-900 uppercase italic">No Intel Found</h3>
+            <p className="text-slate-500 font-medium max-w-sm mx-auto mt-2">The requested protocol does not exist. Please refine your search parameters or contribute a new entry.</p>
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {articles.map((a) => (
+              <Link key={a.id} href={`/knowledge/${a.id}`} className="group">
+                <Card className="h-full border border-slate-200/60 bg-white hover:border-amber-500/50 transition-all duration-300 shadow-sm hover:shadow-2xl hover:-translate-y-2 rounded-[2rem] overflow-hidden flex flex-col">
+                  <div className="p-8 flex-1">
+                    <div className="flex items-center justify-between mb-6">
+                      <Badge className={cn(
+                        "font-black text-[10px] uppercase tracking-[0.15em] px-3 py-1 rounded-lg",
+                        a.status === 'published' ? "bg-emerald-500/10 text-emerald-700" : "bg-amber-500/10 text-amber-700"
+                      )}>
+                        {a.status}
+                      </Badge>
+                      <div className="flex items-center gap-1.5 text-slate-400">
+                        <span className="w-1 h-1 rounded-full bg-slate-300" />
+                        <span className="text-[10px] font-bold uppercase tracking-widest">{new Date(a.updated_at).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                    
+                    <h3 className="text-xl font-black text-slate-900 leading-tight mb-4 group-hover:text-amber-600 transition-colors line-clamp-2">
+                      {a.title}
+                    </h3>
+                    
+                    <div className="flex flex-wrap gap-2 mb-6">
+                      <Badge variant="outline" className="border-slate-200 text-slate-500 font-bold text-[10px] uppercase tracking-widest px-2 py-0.5">
+                        {a.category?.replace('_', ' ')}
+                      </Badge>
+                      <Badge className="bg-slate-900 text-white font-bold text-[10px] uppercase tracking-widest px-2 py-0.5">
+                        {a.language === 'both' ? 'Bilingual (EN/AM)' : a.language?.toUpperCase()}
+                      </Badge>
+                    </div>
                   </div>
-                  <CardDescription className="flex flex-wrap gap-2">
-                    <Badge className="bg-slate-100 text-slate-700 hover:bg-slate-100">{a.category}</Badge>
-                    <Badge className="bg-amber-50 text-amber-800 hover:bg-amber-50">{a.language}</Badge>
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="text-sm text-slate-600">
-                  <div className="flex items-center justify-between">
-                    <span>Helpful: {a.helpful_count}</span>
-                    <span>Views: {a.view_count}</span>
+                  
+                  <div className="px-8 py-5 bg-slate-50 flex items-center justify-between border-t border-slate-100 mt-auto">
+                    <div className="flex items-center gap-4 text-slate-400">
+                      <div className="flex items-center gap-1 text-[10px] font-black uppercase">
+                        <span className="text-slate-900">{a.view_count}</span> VIEWS
+                      </div>
+                      <div className="flex items-center gap-1 text-[10px] font-black uppercase">
+                        <span className="text-amber-600">{a.helpful_count}</span> HELPFUL
+                      </div>
+                    </div>
+                    <div className="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center group-hover:bg-amber-500 group-hover:border-amber-500 transition-all">
+                      <Plus className="h-4 w-4 text-slate-400 group-hover:text-slate-950 rotate-45" />
+                    </div>
                   </div>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
-        </div>
-      )}
+                </Card>
+              </Link>
+            ))}
+          </div>
+        )}
+      </main>
     </div>
   );
 }

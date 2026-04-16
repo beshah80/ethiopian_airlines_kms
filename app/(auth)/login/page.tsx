@@ -78,30 +78,26 @@ export default function LoginPage() {
 
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-12 relative overflow-hidden"
-      style={{
-        backgroundImage: `radial-gradient(circle at 0% 0%, #0f172a 0%, #020617 100%)`,
-      }}
-    >
-      {/* Aesthetic Background Elements */}
-      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-green-600 via-amber-400 to-red-600 opacity-50" />
-      <div className="absolute -top-24 -left-24 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl" />
-      <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl" />
+    <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-white relative overflow-hidden">
+      {/* Subtle Aesthetic Elements for Light Theme */}
+      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-green-600 via-amber-400 to-red-600 opacity-20" />
+      <div className="absolute -top-24 -left-24 w-96 h-96 bg-amber-500/5 rounded-full blur-3xl" />
+      <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl" />
       
       <div className="w-full max-w-md relative z-10">
-        <Card className="border border-white/10 shadow-2xl bg-slate-900/40 backdrop-blur-xl overflow-hidden rounded-2xl">
-          <CardHeader className="space-y-1 pb-8 pt-10 text-center border-b border-white/5">
-            <CardTitle className="text-3xl font-black tracking-tight text-white uppercase italic">
-              Access <span className="text-amber-500">Gateway</span>
+        <Card className="border border-slate-200 shadow-xl bg-white/80 backdrop-blur-xl overflow-hidden rounded-2xl">
+          <CardHeader className="space-y-1 pb-8 pt-10 text-center border-b border-slate-100">
+            <CardTitle className="text-3xl font-black tracking-tight text-slate-900 uppercase italic">
+              Access <span className="text-amber-600">Gateway</span>
             </CardTitle>
-            <CardDescription className="text-slate-400 text-sm font-light tracking-wide">
+            <CardDescription className="text-slate-500 text-sm font-medium tracking-wide">
               Secure Authentication Protocol
             </CardDescription>
           </CardHeader>
           
           <CardContent className="pt-8 px-8">
             {error && (
-              <Alert className="mb-6 border-rose-500/20 bg-rose-500/10 text-rose-200">
+              <Alert className="mb-6 border-rose-200 bg-rose-50 text-rose-700">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription className="text-xs">{error}</AlertDescription>
               </Alert>
@@ -109,11 +105,11 @@ export default function LoginPage() {
 
             <form onSubmit={handleLogin} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-slate-300 font-semibold text-xs uppercase tracking-widest pl-1">
+                <Label htmlFor="email" className="text-slate-500 font-bold text-xs uppercase tracking-widest pl-1">
                   Employee ID / Email
                 </Label>
                 <div className="relative group">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 group-focus-within:text-amber-500 transition-colors" />
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-amber-600 transition-colors" />
                   <Input
                     id="email"
                     type="email"
@@ -121,17 +117,17 @@ export default function LoginPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="pl-10 h-12 bg-slate-950/50 border-white/10 text-white placeholder:text-slate-600 focus:border-amber-500 focus:ring-amber-500/20 transition-all rounded-xl"
+                    className="pl-10 h-12 bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-amber-500 focus:ring-amber-500/20 transition-all rounded-xl"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-slate-300 font-semibold text-xs uppercase tracking-widest pl-1">
+                <Label htmlFor="password" className="text-slate-500 font-bold text-xs uppercase tracking-widest pl-1">
                   Access Key
                 </Label>
                 <div className="relative group">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 group-focus-within:text-amber-500 transition-colors" />
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-amber-600 transition-colors" />
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
@@ -139,12 +135,12 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    className="pl-10 pr-10 h-12 bg-slate-950/50 border-white/10 text-white placeholder:text-slate-600 focus:border-amber-500 focus:ring-amber-500/20 transition-all rounded-xl"
+                    className="pl-10 pr-10 h-12 bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-amber-500 focus:ring-amber-500/20 transition-all rounded-xl"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-900 transition-colors"
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -169,10 +165,10 @@ export default function LoginPage() {
 
             <div className="mt-10 mb-8 relative">
               <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-white/5" />
+                <span className="w-full border-t border-slate-100" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-[#020617] px-4 text-slate-500 font-bold tracking-[0.2em]">Quick Bypass</span>
+                <span className="bg-white px-4 text-slate-400 font-bold tracking-[0.2em]">Quick Bypass</span>
               </div>
             </div>
 
@@ -180,21 +176,21 @@ export default function LoginPage() {
                <div className="grid grid-cols-3 gap-3">
                   <button 
                     type="button"
-                    className="py-3 px-2 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 text-[10px] font-bold text-slate-300 transition-all uppercase tracking-tight"
+                    className="py-3 px-2 rounded-xl border border-slate-100 bg-slate-50 hover:bg-slate-100 text-[10px] font-bold text-slate-600 transition-all uppercase tracking-tight"
                     onClick={() => attemptLogin("community@ethiopianairlines.com", "community123", true)}
                   >
                     Staff
                   </button>
                   <button 
                     type="button"
-                    className="py-3 px-2 rounded-xl border border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/10 text-[10px] font-bold text-amber-500 transition-all uppercase tracking-tight"
+                    className="py-3 px-2 rounded-xl border border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/10 text-[10px] font-bold text-amber-600 transition-all uppercase tracking-tight"
                     onClick={() => attemptLogin("expert@ethiopianairlines.com", "expert123", true)}
                   >
                     Expert
                   </button>
                   <button 
                     type="button"
-                    className="py-3 px-2 rounded-xl border border-rose-500/20 bg-rose-500/5 hover:bg-rose-500/10 text-[10px] font-bold text-rose-400 transition-all uppercase tracking-tight"
+                    className="py-3 px-2 rounded-xl border border-rose-500/20 bg-rose-500/5 hover:bg-rose-500/10 text-[10px] font-bold text-rose-600 transition-all uppercase tracking-tight"
                     onClick={() => attemptLogin("admin@ethiopianairlines.com", "admin123", true)}
                   >
                     Root
@@ -204,8 +200,8 @@ export default function LoginPage() {
           </CardContent>
         </Card>
         
-        <p className="mt-8 text-center text-[10px] uppercase tracking-[0.3em] text-slate-600 font-bold">
-          Strategic Knowledge Gateway <span className="text-slate-800 mx-2">|</span> v1.0.42
+        <p className="mt-8 text-center text-[10px] uppercase tracking-[0.3em] text-slate-400 font-bold">
+          Strategic Knowledge Gateway <span className="text-slate-200 mx-2">|</span> v1.0.42
         </p>
       </div>
     </div>
