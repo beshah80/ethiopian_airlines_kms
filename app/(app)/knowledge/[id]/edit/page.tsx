@@ -60,7 +60,8 @@ export default function KnowledgeEditPage() {
       setError(null);
 
       const { data: auth } = await supabase.auth.getUser();
-      if (!auth.user) {
+      const isDemo = typeof window !== "undefined" && !!localStorage.getItem("kms_demo_profile");
+      if (!auth.user && !isDemo) {
         router.push("/login");
         return;
       }

@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/lib/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,8 +11,8 @@ import { Label } from "@/components/ui/label";
 import { AlertTriangle, ArrowLeft, Loader2, Plane, AlertCircle, ShieldCheck } from "lucide-react";
 
 export default function NewLessonLearnedPage() {
+  const { profile, loading: authLoading, supabase } = useAuth();
   const router = useRouter();
-  const supabase = useMemo(() => createClient(), []);
 
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
@@ -32,21 +32,12 @@ export default function NewLessonLearnedPage() {
     if (!formData.title || !formData.summary || !formData.root_cause || !formData.corrective_action) return;
     
     setSaving(true);
-    const { data: auth } = await supabase.auth.getUser();
-    let user = auth.user;
-    let demoProfile = null;
-
-    if (!user && typeof window !== 'undefined') {
-       const demoStr = localStorage.getItem('kms_demo_profile');
-       if (demoStr) demoProfile = JSON.parse(demoStr);
-    }
-
-    if (!user && !demoProfile) {
+    if (authLoading || !profile) {
       router.push("/login");
       return;
     }
 
-    const currentUserId = user?.id || demoProfile?.id;
+    const currentUserId = profile.id;
 
     const { error } = await supabase.from("lessons_learned").insert({
       title: formData.title,

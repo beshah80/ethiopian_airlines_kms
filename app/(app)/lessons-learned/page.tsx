@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/lib/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -25,8 +25,8 @@ type LessonLearned = {
 };
 
 export default function LessonsLearnedPage() {
+  const { profile, loading: authLoading, supabase } = useAuth();
   const router = useRouter();
-  const supabase = useMemo(() => createClient(), []);
 
   const [loading, setLoading] = useState(true);
   const [lessons, setLessons] = useState<LessonLearned[]>([]);
@@ -34,13 +34,10 @@ export default function LessonsLearnedPage() {
   const [deptFilter, setDeptFilter] = useState("all");
 
   useEffect(() => {
+    if (authLoading || !profile) return;
+
     const load = async () => {
       setLoading(true);
-      const { data: auth } = await supabase.auth.getUser();
-      if (!auth.user) {
-        router.push("/login");
-        return;
-      }
 
       let query = supabase
         .from("lessons_learned")
@@ -56,7 +53,7 @@ export default function LessonsLearnedPage() {
     };
 
     load();
-  }, [router, q, deptFilter, supabase]);
+  }, [q, deptFilter, supabase, profile, authLoading]);
 
   const getPreventabilityColor = (p: string) => {
     switch(p) {

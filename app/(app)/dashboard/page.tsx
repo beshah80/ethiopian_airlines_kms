@@ -10,17 +10,7 @@ import {
   ArrowRight, FileText, TrendingUp, Plus,
   Settings, BarChart2, CheckSquare, Video, Star
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
-
-interface UserProfile {
-  id: string;
-  first_name: string;
-  last_name: string;
-  email: string;
-  role: string;
-  department_id: string;
-  is_expert: boolean;
-}
+import { useAuth, UserProfile } from "@/lib/hooks/use-auth";
 
 // ── Role-specific action configs ──────────────────────────────────────────────
 
@@ -80,81 +70,42 @@ function getRoleKey(profile: UserProfile | null): "admin" | "expert" | "staff" {
 }
 
 export default function DashboardPage() {
-  const [, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { profile, loading, logout, supabase } = useAuth();
   const [stats, setStats] = useState([0, 0, 0]);
-  const router = useRouter();
-  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
-    let mounted = true;
+    if (!profile) return;
 
-    const checkAuth = async () => {
-      if (typeof window !== "undefined") {
-        const demoProfileStr = localStorage.getItem("kms_demo_profile");
-        if (demoProfileStr) {
-          try {
-            const demoProfile = JSON.parse(demoProfileStr);
-            setProfile(demoProfile);
-            const { count: tc } = await supabase.from("knowledge_articles").select("*", { count: "exact", head: true });
-            setStats([tc || 0, 0, 0]);
-            setLoading(false);
-            return;
-          } catch { /* ignore */ }
-        }
-      }
-
-      await new Promise((r) => setTimeout(r, 100));
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { if (mounted) router.push("/login"); return; }
-
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { if (mounted) router.push("/login"); return; }
-      if (!mounted) return;
-      setUser(user);
-
-      const { data: profileData } = await supabase.from("user_profiles").select("*").eq("id", user.id).single();
-      if (!profileData) { if (mounted) router.push("/onboarding"); return; }
-
+    const fetchStats = async () => {
       let s0 = 0, s1 = 0, s2 = 0;
+      const roleKey = getRoleKey(profile);
+      const userId = profile.id;
+
       try {
-        const roleKey = getRoleKey(profileData as UserProfile);
         if (roleKey === "admin") {
           const { count: tc } = await supabase.from("knowledge_articles").select("*", { count: "exact", head: true });
           const { count: ec } = await supabase.from("user_profiles").select("*", { count: "exact", head: true }).eq("is_expert", true);
           const { count: ic } = await supabase.from("innovation_ideas").select("*", { count: "exact", head: true }).eq("status", "submitted");
           s0 = tc || 0; s1 = ec || 0; s2 = ic || 0;
         } else if (roleKey === "expert") {
-          const { count: mc } = await supabase.from("knowledge_articles").select("*", { count: "exact", head: true }).eq("author_id", user.id);
+          const { count: mc } = await supabase.from("knowledge_articles").select("*", { count: "exact", head: true }).eq("author_id", userId);
           const { count: tc } = await supabase.from("knowledge_articles").select("*", { count: "exact", head: true });
-          const { count: sa } = await supabase.from("sop_acknowledgments").select("*", { count: "exact", head: true }).eq("user_id", user.id);
+          const { count: sa } = await supabase.from("sop_acknowledgments").select("*", { count: "exact", head: true }).eq("user_id", userId);
           s0 = mc || 0; s1 = tc || 0; s2 = sa || 0;
         } else {
           const { count: tc } = await supabase.from("knowledge_articles").select("*", { count: "exact", head: true });
           const { count: ec } = await supabase.from("user_profiles").select("*", { count: "exact", head: true }).eq("is_expert", true);
-          const { count: ic } = await supabase.from("innovation_ideas").select("*", { count: "exact", head: true }).eq("submitted_by", user.id);
+          const { count: ic } = await supabase.from("innovation_ideas").select("*", { count: "exact", head: true }).eq("submitted_by", userId);
           s0 = tc || 0; s1 = ec || 0; s2 = ic || 0;
         }
-      } catch { /* tables may not exist yet */ }
-
-      if (mounted) {
-        setProfile(profileData as UserProfile);
-        setStats([s0, s1, s2]);
-        setLoading(false);
+      } catch (e) {
+        console.error("Stats fetch error:", e);
       }
+      setStats([s0, s1, s2]);
     };
 
-    checkAuth();
-    return () => { mounted = false; };
-  }, [router, supabase]);
-
-  const handleLogout = async () => {
-    if (typeof window !== "undefined") localStorage.removeItem("kms_demo_profile");
-    document.cookie = "kms_demo_profile=; path=/; max-age=0";
-    await supabase.auth.signOut();
-    router.push("/login");
-  };
+    fetchStats();
+  }, [profile, supabase]);
 
   if (loading) {
     return (
@@ -199,7 +150,7 @@ export default function DashboardPage() {
           </div>
           <Button
             variant="outline"
-            onClick={handleLogout}
+            onClick={logout}
             className="gap-2 text-xs font-semibold text-slate-500 hover:text-slate-900 h-8"
           >
             <LogOut className="h-3.5 w-3.5" />

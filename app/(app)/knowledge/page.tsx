@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/lib/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -25,8 +25,8 @@ type Article = {
 };
 
 export default function KnowledgeIndexPage() {
+  const { profile, loading: authLoading, supabase } = useAuth();
   const router = useRouter();
-  const supabase = useMemo(() => createClient(), []);
 
   const [loading, setLoading] = useState(true);
   const [articles, setArticles] = useState<Article[]>([]);
@@ -44,14 +44,11 @@ export default function KnowledgeIndexPage() {
   }, []);
 
   useEffect(() => {
+    if (authLoading || !profile) return;
+
     const load = async () => {
       setLoading(true);
-      const { data: auth } = await supabase.auth.getUser();
-      if (!auth.user) {
-        router.push("/login");
-        return;
-      }
-
+      
       let query = supabase
         .from("knowledge_articles")
         .select(
@@ -70,7 +67,7 @@ export default function KnowledgeIndexPage() {
     };
 
     load();
-  }, [category, q, router, status, supabase]);
+  }, [category, q, status, supabase, profile, authLoading]);
 
   const applyFilters = () => {
     const next = new URLSearchParams();

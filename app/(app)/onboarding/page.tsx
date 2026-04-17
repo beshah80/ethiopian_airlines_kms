@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/lib/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,8 +13,8 @@ type Department = { id: string; name: string; regional_location: string | null }
 type UserRole = "staff" | "trainee" | "expert" | "dept_head" | "admin";
 
 export default function OnboardingPage() {
+  const { profile, loading: authLoading, supabase } = useAuth();
   const router = useRouter();
-  const supabase = useMemo(() => createClient(), []);
 
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
@@ -27,37 +27,15 @@ export default function OnboardingPage() {
   const [role, setRole] = useState<UserRole>("staff");
 
   useEffect(() => {
+    if (authLoading) return;
+    if (profile) {
+      router.push("/dashboard");
+      return;
+    }
+
     const load = async () => {
       setLoading(true);
       setError(null);
-
-      // Check session first (more reliable)
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        console.log("Onboarding: No session found, redirecting to login");
-        router.push("/login");
-        return;
-      }
-
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        console.log("Onboarding: No user found, redirecting to login");
-        router.push("/login");
-        return;
-      }
-      
-      console.log("Onboarding: User found:", user.email);
-
-      const { data: existing } = await supabase
-        .from("user_profiles")
-        .select("id")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      if (existing?.id) {
-        router.push("/dashboard");
-        return;
-      }
 
       const { data: departments } = await supabase
         .from("departments")
@@ -70,7 +48,7 @@ export default function OnboardingPage() {
     };
 
     load();
-  }, [router, supabase]);
+  }, [router, supabase, profile, authLoading]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();

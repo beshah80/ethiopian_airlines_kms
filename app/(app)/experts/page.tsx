@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/lib/hooks/use-auth";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, Users, Mail, Clock } from "lucide-react";
@@ -31,24 +31,18 @@ const availabilityStyle: Record<string, string> = {
 };
 
 export default function ExpertsPage() {
+  const { profile, loading: authLoading, supabase } = useAuth();
   const router = useRouter();
-  const supabase = useMemo(() => createClient(), []);
   const [loading, setLoading] = useState(true);
   const [experts, setExperts] = useState<ExpertProfile[]>([]);
   const [q, setQ] = useState("");
   const [department, setDepartment] = useState("all");
 
   useEffect(() => {
+    if (authLoading || !profile) return;
+
     const load = async () => {
       setLoading(true);
-      const { data: auth } = await supabase.auth.getUser();
-      let user = auth.user;
-
-      if (!user && typeof window !== "undefined") {
-        const demoStr = localStorage.getItem("kms_demo_profile");
-        if (demoStr) { setLoading(false); return; }
-      }
-      if (!user) { router.push("/login"); return; }
 
       let query = supabase
         .from("user_profiles")
@@ -85,7 +79,7 @@ export default function ExpertsPage() {
       setLoading(false);
     };
     load();
-  }, [department, q, router, supabase]);
+  }, [department, q, supabase, profile, authLoading]);
 
   return (
     <div className="min-h-screen bg-slate-50">

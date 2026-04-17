@@ -35,12 +35,20 @@ export async function updateSession(request: NextRequest) {
 
   // Protect routes - allow public landing page or bypass if demo cookie exists
   const isDemoCookie = request.cookies.get('kms_demo_profile')
+  const isAuthPage = request.nextUrl.pathname === '/' || request.nextUrl.pathname.startsWith('/login')
   
+  // If user is logged in (real or demo) and tries to access login/landing, redirect to dashboard
+  if ((user || isDemoCookie) && isAuthPage) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/dashboard'
+    return NextResponse.redirect(url)
+  }
+
+  // If user is NOT logged in and tries to access protected routes, redirect to login
   if (
     !user &&
     !isDemoCookie &&
-    request.nextUrl.pathname !== '/' &&
-    !request.nextUrl.pathname.startsWith('/login') &&
+    !isAuthPage &&
     !request.nextUrl.pathname.startsWith('/auth') &&
     !request.nextUrl.pathname.startsWith('/_next') &&
     !request.nextUrl.pathname.startsWith('/api') &&

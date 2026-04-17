@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/lib/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -36,18 +36,18 @@ const statusColors: Record<string, string> = {
 };
 
 export default function InnovationHubPage() {
+  const { profile, loading: authLoading, supabase } = useAuth();
   const router = useRouter();
-  const supabase = useMemo(() => createClient(), []);
   const [loading, setLoading] = useState(true);
   const [ideas, setIdeas] = useState<InnovationIdea[]>([]);
   const [sortBy, setSortBy] = useState("votes");
   const [q, setQ] = useState("");
 
   useEffect(() => {
+    if (authLoading || !profile) return;
+
     const load = async () => {
       setLoading(true);
-      const { data: auth } = await supabase.auth.getUser();
-      if (!auth.user) { router.push("/login"); return; }
 
       let query = supabase.from("innovation_ideas").select("id,title,description,department,estimated_impact,status,votes,created_at");
       query = sortBy === "votes" ? query.order("votes", { ascending: false }) : query.order("created_at", { ascending: false });
@@ -58,7 +58,7 @@ export default function InnovationHubPage() {
       setLoading(false);
     };
     load();
-  }, [router, sortBy, q, supabase]);
+  }, [sortBy, q, supabase, profile, authLoading]);
 
   return (
     <div className="min-h-screen bg-slate-50">

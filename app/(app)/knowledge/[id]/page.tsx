@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/lib/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -27,22 +27,19 @@ type Article = {
 };
 
 export default function KnowledgeViewPage() {
+  const { profile, loading: authLoading, supabase } = useAuth();
   const router = useRouter();
   const params = useParams<{ id: string }>();
-  const supabase = useMemo(() => createClient(), []);
 
   const [loading, setLoading] = useState(true);
   const [article, setArticle] = useState<Article | null>(null);
   const [liking, setLiking] = useState(false);
 
   useEffect(() => {
+    if (authLoading || !profile) return;
+
     const load = async () => {
       setLoading(true);
-      const { data: auth } = await supabase.auth.getUser();
-      if (!auth.user) {
-        router.push("/login");
-        return;
-      }
 
       const { data } = await supabase
         .from("knowledge_articles")
@@ -65,7 +62,7 @@ export default function KnowledgeViewPage() {
     };
 
     load();
-  }, [params.id, router, supabase]);
+  }, [params.id, supabase, profile, authLoading]);
 
   const handleLike = async () => {
     if (!article) return;
