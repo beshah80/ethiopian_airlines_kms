@@ -1,269 +1,216 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BookOpen, Users, Lightbulb, Shield, Globe, Plane, ArrowRight } from "lucide-react";
+import { BookOpen, Users, Lightbulb, Shield, Globe, Plane, ArrowRight, TrendingUp } from "lucide-react";
+
+const features = [
+  { icon: BookOpen, label: "Knowledge Base", desc: "SOPs, manuals & best practices — searchable, bilingual, versioned.", href: "/knowledge" },
+  { icon: Users, label: "Expert Locator", desc: "Find who knows what across every department, instantly.", href: "/experts" },
+  { icon: Lightbulb, label: "Innovation Hub", desc: "Submit ideas, vote, track implementation from any level.", href: "/innovation" },
+  { icon: Shield, label: "Lessons Learned", desc: "After-action reviews that prevent incidents from repeating.", href: "/lessons-learned" },
+  { icon: Globe, label: "Localization", desc: "Amharic + English. Offline-ready for regional stations.", href: "/login" },
+  { icon: Plane, label: "All Departments", desc: "Flight Ops, Engineering, Ground, Cabin, Training — one system.", href: "/login" },
+];
+
+const personas = [
+  { name: "Capt. Abebe Bikila", role: "Senior Pilot · 15 yrs", quote: "I share HAAB weather approaches once — every junior pilot learns forever." },
+  { name: "Engineer Tola Girma", role: "MRO · 14 yrs", quote: "Hydraulic fault on the 737? I find the SOP and the expert in under a minute." },
+  { name: "Tewodros Abebe", role: "Ground Ops · Bahir Dar", quote: "Offline Amharic procedures. Works even when the internet doesn't." },
+  { name: "Innovation Committee", role: "Cross-departmental", quote: "Ideas from the hangar floor reach management and get implemented." },
+];
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen">
-      {/* Hero Section with Background */}
-      <section
-        className="relative min-h-screen flex items-center justify-center"
-        style={{
-          backgroundImage: `linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.7)), url('/assets/background.jpg')`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundAttachment: 'fixed'
-        }}
-      >
-        <div className="container mx-auto px-4 text-center text-white relative z-10">
-          <h1 className="text-6xl md:text-7xl font-bold mb-6 leading-tight mt-8">
-            Ethiopian Airlines<br />
-            <span className="text-amber-400">Knowledge Management</span>
-          </h1>
+    <div className="min-h-screen bg-white text-slate-900">
 
-          <p className="text-xl md:text-2xl text-slate-200 max-w-3xl mx-auto mb-12 leading-relaxed">
-            Preserving institutional knowledge. Empowering excellence across Flight Operations,
-            Engineering, and Customer Service through innovation and localization.
-          </p>
+      {/* ── HERO — full image background, nav inside ── */}
+      <section className="relative min-h-screen flex flex-col">
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+        {/* Full-screen background image */}
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: `url('/assets/background.jpg')`,
+            backgroundSize: "cover",
+            backgroundPosition: "center center",
+          }}
+        />
+        {/* Overlay — same as login */}
+        <div className="absolute inset-0 bg-slate-900/55" />
+
+        {/* NAV — transparent, over image */}
+        <nav className="relative z-20 flex items-center justify-between px-8 md:px-14 h-16 pt-2">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center shadow-sm">
+              <Plane className="h-4 w-4 text-black" />
+            </div>
+            <div className="leading-tight">
+              <div className="text-sm font-bold text-white tracking-tight">Ethiopian Airlines</div>
+              <div className="text-[10px] text-white/40 font-semibold tracking-widest uppercase">Knowledge Portal</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
             <Link href="/login">
-              <Button size="lg" className="bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold text-lg px-10 py-6">
-                Access Knowledge Base
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
+              <button className="h-9 px-5 text-sm font-semibold text-white/70 hover:text-white transition-colors">
+                Sign In
+              </button>
             </Link>
-            <Link href="#strategic-framework">
-              <Button size="lg" className="bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold text-lg px-10 py-6">
-                Explore Features
-              </Button>
+            <Link href="/login">
+              <button className="h-9 px-5 text-sm font-bold bg-amber-500 hover:bg-amber-400 text-black rounded-xl transition-all">
+                Get Started
+              </button>
             </Link>
           </div>
-        </div>
-      </section>
+        </nav>
 
-      {/* Features Section */}
-      <section id="features" className="py-24 px-4 bg-slate-50">
-        <div className="container mx-auto max-w-6xl">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center mb-16">
-            <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm">
-              <p className="text-4xl font-bold text-amber-500">12</p>
-              <p className="text-sm text-slate-600 font-medium">Departments</p>
-            </div>
-            <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm">
-              <p className="text-4xl font-bold text-amber-500">4</p>
-              <p className="text-sm text-slate-600 font-medium">Regional Stations</p>
-            </div>
-            <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm">
-              <p className="text-4xl font-bold text-amber-500">2</p>
-              <p className="text-sm text-slate-600 font-medium">Languages</p>
-            </div>
-            <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm">
-              <p className="text-4xl font-bold text-amber-400">15+</p>
-              <p className="text-sm text-slate-600 font-medium">Expert Profiles</p>
-            </div>
-          </div>
+        {/* HERO CONTENT — centered vertically in remaining space */}
+        <div className="relative z-10 flex-1 flex items-center px-8 md:px-14">
+          <div className="max-w-2xl">
+            <h1 className="text-5xl md:text-7xl font-bold leading-[1.05] tracking-tight text-white mb-6">
+              One system.<br />
+              <span className="text-amber-400">All the knowledge.</span>
+            </h1>
 
-          <div id="strategic-framework" className="text-center mb-16 scroll-mt-24">
-            <h2 className="text-4xl font-bold text-slate-900 mb-4">Strategic Knowledge Framework</h2>
-            <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-              Built around three core pillars: Innovation, Quality Assurance, and Ethiopian Localization
+            <p className="text-white/60 text-lg leading-relaxed mb-10 font-normal max-w-lg">
+              Institutional intelligence — captured, searchable, and accessible to every employee from Addis to Bahir Dar.
             </p>
-          </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <Card className="hover:shadow-xl transition-all border-t-4 border-t-amber-500">
-              <CardHeader>
-                <BookOpen className="h-12 w-12 text-amber-600 mb-3" />
-                <CardTitle className="text-xl">Knowledge Repository</CardTitle>
-                <CardDescription className="text-base">
-                  Centralized SOPs, manuals, and best practices with bilingual support
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ul className="text-sm text-slate-600 space-y-2">
-                  <li className="flex items-center gap-2"><span className="text-amber-500">•</span> Searchable documentation</li>
-                  <li className="flex items-center gap-2"><span className="text-amber-500">•</span> Version control & history</li>
-                  <li className="flex items-center gap-2"><span className="text-amber-500">•</span> Amharic & English content</li>
-                </ul>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-xl transition-all border-t-4 border-t-amber-500">
-              <CardHeader>
-                <Users className="h-12 w-12 text-amber-600 mb-3" />
-                <CardTitle className="text-xl">Expert Locator</CardTitle>
-                <CardDescription className="text-base">
-                  Find and connect with subject matter experts across all departments
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ul className="text-sm text-slate-600 space-y-2">
-                  <li className="flex items-center gap-2"><span className="text-amber-500">•</span> Expert profiles & skills</li>
-                  <li className="flex items-center gap-2"><span className="text-amber-500">•</span> Direct inquiry system</li>
-                  <li className="flex items-center gap-2"><span className="text-amber-500">•</span> Mentorship matching</li>
-                </ul>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-xl transition-all border-t-4 border-t-amber-500">
-              <CardHeader>
-                <Lightbulb className="h-12 w-12 text-amber-600 mb-3" />
-                <CardTitle className="text-xl">Innovation Hub</CardTitle>
-                <CardDescription className="text-base">
-                  Capture and vote on improvement ideas from all staff levels
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ul className="text-sm text-slate-600 space-y-2">
-                  <li className="flex items-center gap-2"><span className="text-amber-500">•</span> Idea submission portal</li>
-                  <li className="flex items-center gap-2"><span className="text-amber-500">•</span> Community voting</li>
-                  <li className="flex items-center gap-2"><span className="text-amber-500">•</span> Implementation tracking</li>
-                </ul>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-xl transition-all border-t-4 border-t-amber-500">
-              <CardHeader>
-                <Shield className="h-12 w-12 text-amber-600 mb-3" />
-                <CardTitle className="text-xl">Lessons Learned</CardTitle>
-                <CardDescription className="text-base">
-                  Document and share operational insights from incidents and flights
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ul className="text-sm text-slate-600 space-y-2">
-                  <li className="flex items-center gap-2"><span className="text-amber-500">•</span> After-action reviews</li>
-                  <li className="flex items-center gap-2"><span className="text-amber-500">•</span> Incident analysis</li>
-                  <li className="flex items-center gap-2"><span className="text-amber-500">•</span> Preventive measures</li>
-                </ul>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-xl transition-all border-t-4 border-t-amber-500">
-              <CardHeader>
-                <Globe className="h-12 w-12 text-amber-600 mb-3" />
-                <CardTitle className="text-xl">Ethiopian Localization</CardTitle>
-                <CardDescription className="text-base">
-                  Built for Ethiopian context with offline support and storytelling
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ul className="text-sm text-slate-600 space-y-2">
-                  <li className="flex items-center gap-2"><span className="text-amber-500">•</span> Amharic interface</li>
-                  <li className="flex items-center gap-2"><span className="text-amber-500">•</span> Offline mobile access</li>
-                  <li className="flex items-center gap-2"><span className="text-amber-500">•</span> Regional station support</li>
-                </ul>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-xl transition-all border-t-4 border-t-amber-500">
-              <CardHeader>
-                <Plane className="h-12 w-12 text-amber-600 mb-3" />
-                <CardTitle className="text-xl">Department Coverage</CardTitle>
-                <CardDescription className="text-base">
-                  Tailored for Flight Ops, Engineering, Customer Service, Ground Ops
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ul className="text-sm text-slate-600 space-y-2">
-                  <li className="flex items-center gap-2"><span className="text-amber-500">•</span> Flight Operations</li>
-                  <li className="flex items-center gap-2"><span className="text-amber-500">•</span> Engineering & Maintenance</li>
-                  <li className="flex items-center gap-2"><span className="text-amber-500">•</span> Training Academy</li>
-                </ul>
-              </CardContent>
-            </Card>
+            <div className="flex items-center gap-4">
+              <Link href="/login">
+                <button className="h-12 px-8 bg-amber-500 hover:bg-amber-400 text-black font-bold text-sm rounded-xl transition-colors flex items-center gap-2 shadow-lg shadow-amber-500/20">
+                  Access Knowledge Base <ArrowRight className="h-4 w-4" />
+                </button>
+              </Link>
+              <Link href="#features">
+                <button className="h-12 px-6 text-sm font-semibold text-white/60 hover:text-white transition-colors">
+                  Explore Features
+                </button>
+              </Link>
+            </div>
           </div>
         </div>
-      </section>
 
-      {/* User Personas Section */}
-      <section className="py-24 px-4 bg-slate-900 text-white">
-        <div className="container mx-auto max-w-6xl">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4">Real-World Scenarios</h2>
-            <p className="text-lg text-slate-400">
-              Key user personas demonstrating how Ethiopian Airlines staff use the KMS
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-8">
-            <div className="bg-slate-800/50 backdrop-blur p-8 rounded-xl border border-slate-700">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 bg-amber-500/20 rounded-full flex items-center justify-center">
-                  <Plane className="h-6 w-6 text-amber-400" />
+        {/* Stats strip at bottom of hero */}
+        <div className="relative z-10 border-t border-white/10 bg-black/20 backdrop-blur-sm">
+          <div className="px-8 md:px-14">
+            <div className="grid grid-cols-3 divide-x divide-white/10 max-w-lg">
+              {[
+                { value: "33%", label: "Faster Onboarding" },
+                { value: "60s", label: "vs 30min Search" },
+                { value: "4", label: "Crown Jewels" },
+              ].map((s) => (
+                <div key={s.label} className="py-5 px-6 first:pl-0">
+                  <div className="text-2xl font-bold text-amber-400">{s.value}</div>
+                  <div className="text-[11px] text-white/40 font-medium tracking-wider uppercase mt-0.5">{s.label}</div>
                 </div>
-                <h4 className="font-bold text-xl text-amber-400">Captain Abebe Bikila</h4>
-              </div>
-              <p className="text-slate-300 mb-4">Senior Pilot, 15 years experience, 10,000+ hours</p>
-              <p className="text-sm text-slate-400 leading-relaxed">
-                Shares expert knowledge via video stories about challenging weather approaches at HAAB (Addis Ababa).
-                Documents Boeing 787 Dreamliner performance data for high-altitude operations.
-              </p>
-            </div>
-
-            <div className="bg-slate-800/50 backdrop-blur p-8 rounded-xl border border-slate-700">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 bg-amber-500/20 rounded-full flex items-center justify-center">
-                  <Shield className="h-6 w-6 text-amber-400" />
-                </div>
-                <h4 className="font-bold text-xl text-amber-400">Engineer Tola Girma</h4>
-              </div>
-              <p className="text-slate-300 mb-4">Aircraft Maintenance, 14 years experience</p>
-              <p className="text-sm text-slate-400 leading-relaxed">
-                Uses mobile KMS at the hangar to troubleshoot hydraulic issues on Boeing 737.
-                Accesses expert guidance and SOPs while working on the aircraft.
-              </p>
-            </div>
-
-            <div className="bg-slate-800/50 backdrop-blur p-8 rounded-xl border border-slate-700">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 bg-amber-500/20 rounded-full flex items-center justify-center">
-                  <Globe className="h-6 w-6 text-amber-400" />
-                </div>
-                <h4 className="font-bold text-xl text-amber-400">Staff Tewodros Abebe</h4>
-              </div>
-              <p className="text-slate-300 mb-4">Ground Operations, Bahir Dar Station</p>
-              <p className="text-sm text-slate-400 leading-relaxed">
-                Accesses offline Amharic-language procedures at the regional station where
-                internet connectivity is limited. Critical for passenger handling operations.
-              </p>
-            </div>
-
-            <div className="bg-slate-800/50 backdrop-blur p-8 rounded-xl border border-slate-700">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 bg-amber-500/20 rounded-full flex items-center justify-center">
-                  <Lightbulb className="h-6 w-6 text-amber-400" />
-                </div>
-                <h4 className="font-bold text-xl text-amber-400">Innovation Committee</h4>
-              </div>
-              <p className="text-slate-300 mb-4">Cross-departmental improvement team</p>
-              <p className="text-sm text-slate-400 leading-relaxed">
-                Reviews and approves high-impact ideas from staff across all departments.
-                Tracks implementation of approved innovations like digital baggage tracking.
-              </p>
+              ))}
             </div>
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-20 px-4 bg-amber-500">
-        <div className="container mx-auto text-center">
-          <h2 className="text-3xl font-bold text-slate-900 mb-6">Ready to Access the Knowledge Base?</h2>
-          <p className="text-lg text-slate-800 mb-8 max-w-2xl mx-auto">
-            Login with your Ethiopian Airlines credentials to explore SOPs, connect with experts,
-            and contribute to our organizational knowledge.
-          </p>
+      {/* ── FEATURES ── */}
+      <section id="features" className="py-24 px-8 md:px-14 bg-slate-50">
+        <div className="max-w-6xl mx-auto">
+          <div className="mb-14">
+            <p className="text-amber-600 text-xs font-bold tracking-widest uppercase mb-3">What's inside</p>
+            <h2 className="text-3xl font-bold text-slate-900">Built for every role,<br />every station.</h2>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {features.map(({ icon: Icon, label, desc, href }) => (
+              <Link key={label} href={href} className="group block">
+                <div className="h-full bg-white hover:bg-amber-50/60 border border-slate-100 hover:border-amber-200 rounded-2xl p-6 transition-all duration-200 shadow-sm hover:shadow-md">
+                  <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center mb-5 group-hover:bg-amber-200 transition-colors">
+                    <Icon className="h-5 w-5 text-amber-600" />
+                  </div>
+                  <h3 className="font-bold text-slate-900 text-sm mb-2">{label}</h3>
+                  <p className="text-slate-400 text-sm leading-relaxed font-normal">{desc}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── HOW IT WORKS ── */}
+      <section className="py-20 px-8 md:px-14 bg-white border-y border-slate-100">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-12">
+            {[
+              { n: "01", title: "Capture", body: "Experts record SOPs, videos, and lessons learned directly into the system." },
+              { n: "02", title: "Search", body: "Any employee finds what they need in seconds — by topic, aircraft, or department." },
+              { n: "03", title: "Improve", body: "Ideas get voted on, reviewed, and implemented. Knowledge compounds over time." },
+            ].map((step) => (
+              <div key={step.n} className="flex gap-5">
+                <span className="text-5xl font-bold text-slate-100 leading-none select-none shrink-0">{step.n}</span>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-base mb-2">{step.title}</h3>
+                  <p className="text-slate-400 text-sm leading-relaxed font-normal">{step.body}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── PERSONAS ── */}
+      <section className="py-24 px-8 md:px-14 bg-slate-50">
+        <div className="max-w-6xl mx-auto">
+          <div className="mb-14">
+            <p className="text-amber-600 text-xs font-bold tracking-widest uppercase mb-3">Real scenarios</p>
+            <h2 className="text-3xl font-bold text-slate-900">Used by everyone,<br />from hangar to HQ.</h2>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-4">
+            {personas.map((p) => (
+              <div key={p.name} className="bg-white border border-slate-100 rounded-2xl p-7 shadow-sm">
+                <p className="text-slate-600 text-sm leading-relaxed mb-6 font-normal">"{p.quote}"</p>
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 font-bold text-sm shrink-0">
+                    {p.name[0]}
+                  </div>
+                  <div>
+                    <div className="text-slate-900 font-semibold text-sm">{p.name}</div>
+                    <div className="text-slate-400 text-xs">{p.role}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── CTA ── */}
+      <section className="py-24 px-8 md:px-14 bg-white border-t border-slate-100">
+        <div className="max-w-xl mx-auto text-center">
+          <div className="w-14 h-14 rounded-2xl bg-amber-100 flex items-center justify-center mx-auto mb-7">
+            <TrendingUp className="h-7 w-7 text-amber-600" />
+          </div>
+          <h2 className="text-3xl font-bold text-slate-900 mb-3">Ready to access<br />the knowledge base?</h2>
+          <p className="text-slate-400 text-sm mb-8 font-normal">Login with your Ethiopian Airlines credentials.</p>
           <Link href="/login">
-            <Button size="lg" className="bg-slate-900 hover:bg-slate-800 text-white text-lg px-10 py-6">
-              Login to Ethiopian Airlines KMS
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
+            <button className="h-11 px-10 bg-amber-500 hover:bg-amber-400 text-black font-bold text-sm rounded-xl transition-colors inline-flex items-center gap-2">
+              Login to KMS <ArrowRight className="h-4 w-4" />
+            </button>
           </Link>
         </div>
       </section>
+
+      {/* ── FOOTER ── */}
+      <footer className="border-t border-slate-100 py-8 px-8 md:px-14 bg-white">
+        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-300">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 rounded bg-amber-100 flex items-center justify-center">
+              <Plane className="h-3 w-3 text-amber-600" />
+            </div>
+            <span>Ethiopian Airlines KMS · Academic Prototype 2026</span>
+          </div>
+          <div className="flex gap-6">
+            <span>Innovation</span>
+            <span>Quality</span>
+            <span>Localization</span>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

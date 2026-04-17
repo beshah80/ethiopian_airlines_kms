@@ -74,7 +74,7 @@ export default function InnovationViewPage() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <Link href="/innovation" className="inline-flex items-center text-sm text-indigo-700 hover:text-indigo-800 mb-6">
+      <Link href="/innovation" className="inline-flex items-center text-sm text-slate-500 hover:text-slate-900 mb-6 gap-1.5 font-semibold">
         <ArrowLeft className="mr-2 h-4 w-4" /> Back to Innovation Hub
       </Link>
       
@@ -83,7 +83,7 @@ export default function InnovationViewPage() {
         <div className="md:col-span-2 space-y-6">
            <div>
              <div className="flex gap-2 items-center mb-4">
-                <Badge variant="outline" className="text-indigo-700 border-indigo-200 bg-indigo-50">
+                <Badge variant="outline" className="text-amber-700 border-amber-200 bg-amber-50">
                   {idea.department.replace('_', ' ').toUpperCase()}
                 </Badge>
                 <Badge className={
@@ -116,17 +116,17 @@ export default function InnovationViewPage() {
 
         {/* Sidebar */}
         <div className="space-y-6">
-           <Card className="border-2 border-indigo-100 shadow-sm relative overflow-hidden">
-             <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-bl-full -z-10 mix-blend-multiply opacity-50"></div>
+           <Card className="border-2 border-amber-100 shadow-sm relative overflow-hidden">
+             <div className="absolute top-0 right-0 w-32 h-32 bg-amber-50 rounded-bl-full -z-10 mix-blend-multiply opacity-50"></div>
              <CardContent className="pt-6 text-center">
-               <div className="text-5xl font-bold text-indigo-700 mb-2">{idea.votes}</div>
+               <div className="text-5xl font-bold text-amber-600 mb-2">{idea.votes}</div>
                <div className="text-sm font-medium text-slate-500 uppercase tracking-widest mb-6">Total Votes</div>
                
                <Button 
                  size="lg" 
                  onClick={handleVote} 
                  disabled={voting} 
-                 className="w-full bg-indigo-600 hover:bg-indigo-700 gap-2 h-12 text-base shadow-md hover:shadow-lg transition-all"
+                 className="w-full bg-amber-500 hover:bg-amber-400 text-black font-bold gap-2 h-12 text-base shadow-md hover:shadow-lg transition-all"
                >
                  <TrendingUp className="h-5 w-5" />
                  Upvote Idea

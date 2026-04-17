@@ -71,23 +71,24 @@ export default function NewLessonLearnedPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-3xl">
-      <Link href="/lessons-learned" className="inline-flex items-center text-sm text-rose-700 hover:text-rose-800 mb-6">
-        <ArrowLeft className="mr-2 h-4 w-4" /> Back to Lessons Learned
-      </Link>
+    <div className="min-h-screen bg-slate-50">
+      <div className="container mx-auto px-5 py-8 max-w-3xl">
+        <Link href="/lessons-learned" className="inline-flex items-center text-sm text-slate-500 hover:text-slate-900 mb-6 gap-1.5 font-semibold">
+          <ArrowLeft className="h-4 w-4" /> Back to Lessons Learned
+        </Link>
       
-      <Card className="border-t-4 border-t-rose-600 shadow-md">
-        <CardHeader className="bg-slate-50/50 pb-8">
-          <div className="flex items-center gap-3">
-            <div className="bg-rose-100 p-2.5 rounded-lg">
-              <AlertTriangle className="h-6 w-6 text-rose-700" />
+        <Card className="border-t-4 border-t-rose-500 shadow-sm border-slate-100">
+          <CardHeader className="bg-slate-50/50 pb-8">
+            <div className="flex items-center gap-3">
+              <div className="bg-rose-100 p-2.5 rounded-xl">
+                <AlertTriangle className="h-5 w-5 text-rose-600" />
+              </div>
+              <div>
+                <CardTitle className="text-xl font-bold text-slate-900">After-Action Review</CardTitle>
+                <CardDescription className="mt-0.5">Capture incident knowledge to build operational resilience.</CardDescription>
+              </div>
             </div>
-            <div>
-              <CardTitle className="text-2xl text-slate-900">After-Action Review (AAR)</CardTitle>
-              <CardDescription className="text-base mt-1">Capture incident knowledge to build operational resilience.</CardDescription>
-            </div>
-          </div>
-        </CardHeader>
+          </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-8 -mt-4">
             {/* Section 1: Context */}
@@ -233,14 +234,15 @@ export default function NewLessonLearnedPage() {
                <Link href="/lessons-learned">
                  <Button type="button" variant="outline">Cancel</Button>
                </Link>
-               <Button type="submit" disabled={saving} className="bg-rose-600 hover:bg-rose-700 font-semibold px-8">
+               <Button type="submit" disabled={saving} className="bg-rose-600 hover:bg-rose-700 font-bold px-8 text-xs">
                  {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                 Log Incident to Database
+                 Log Incident
                </Button>
             </div>
           </CardFooter>
         </form>
       </Card>
+      </div>
     </div>
   );
 }

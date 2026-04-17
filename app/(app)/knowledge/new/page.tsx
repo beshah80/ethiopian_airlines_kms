@@ -112,21 +112,23 @@ export default function KnowledgeNewPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-3xl mx-auto">
-        <div className="flex items-center justify-between gap-3 mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">New article</h1>
-            <p className="text-slate-600 mt-1">Create SOPs, training notes, safety guidance, and best practices.</p>
+    <div className="min-h-screen bg-slate-50">
+      <div className="container mx-auto px-5 py-8">
+        <div className="max-w-3xl mx-auto">
+          <div className="flex items-center justify-between gap-3 mb-8">
+            <div>
+              <p className="text-xs font-bold text-amber-600 tracking-widest uppercase mb-1">Knowledge Base</p>
+              <h1 className="text-2xl font-bold text-slate-900">New Article</h1>
+              <p className="text-slate-400 text-sm mt-0.5 font-normal">Create SOPs, training notes, safety guidance, and best practices.</p>
+            </div>
+            <Link href="/knowledge">
+              <Button variant="outline" className="text-xs font-bold h-9">Cancel</Button>
+            </Link>
           </div>
-          <Link href="/knowledge">
-            <Button variant="outline">Back</Button>
-          </Link>
-        </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Article details</CardTitle>
+        <Card className="shadow-sm border-slate-100">
+          <CardHeader className="border-b border-slate-50">
+            <CardTitle className="text-base font-bold">Article Details</CardTitle>
             <CardDescription>Use bilingual fields for localization (English + Amharic).</CardDescription>
           </CardHeader>
           <CardContent>
@@ -247,13 +249,14 @@ export default function KnowledgeNewPage() {
               </Tabs>
 
               <div className="flex items-center justify-end gap-3 pt-2">
-                <Button type="submit" className="bg-amber-600 hover:bg-amber-700" disabled={saving}>
-                  {saving ? "Creating…" : "Create article"}
+                <Button type="submit" className="bg-amber-500 hover:bg-amber-400 text-black font-bold" disabled={saving}>
+                  {saving ? "Creating…" : "Create Article"}
                 </Button>
               </div>
             </form>
           </CardContent>
         </Card>
+        </div>
       </div>
     </div>
   );

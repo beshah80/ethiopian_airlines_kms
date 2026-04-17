@@ -135,21 +135,23 @@ export default function KnowledgeEditPage() {
     );
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-3xl mx-auto">
-        <div className="flex items-center justify-between gap-3 mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Edit article</h1>
-            <p className="text-slate-600 mt-1">Update content, status, tags, and bilingual fields.</p>
+    <div className="min-h-screen bg-slate-50">
+      <div className="container mx-auto px-5 py-8">
+        <div className="max-w-3xl mx-auto">
+          <div className="flex items-center justify-between gap-3 mb-8">
+            <div>
+              <p className="text-xs font-bold text-amber-600 tracking-widest uppercase mb-1">Knowledge Base</p>
+              <h1 className="text-2xl font-bold text-slate-900">Edit Article</h1>
+              <p className="text-slate-400 text-sm mt-0.5 font-normal">Update content, status, tags, and bilingual fields.</p>
+            </div>
+            <Link href={`/knowledge/${article.id}`}>
+              <Button variant="outline" className="text-xs font-bold h-9">Cancel</Button>
+            </Link>
           </div>
-          <Link href={`/knowledge/${article.id}`}>
-            <Button variant="outline">Cancel</Button>
-          </Link>
-        </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Article details</CardTitle>
+        <Card className="shadow-sm border-slate-100">
+          <CardHeader className="border-b border-slate-50">
+            <CardTitle className="text-base font-bold">Article Details</CardTitle>
             <CardDescription>Changes apply immediately (RLS controls who can edit).</CardDescription>
           </CardHeader>
           <CardContent>
@@ -247,13 +249,14 @@ export default function KnowledgeEditPage() {
               </Tabs>
 
               <div className="flex items-center justify-end gap-3 pt-2">
-                <Button type="submit" className="bg-amber-600 hover:bg-amber-700" disabled={saving}>
-                  {saving ? "Saving…" : "Save changes"}
+                <Button type="submit" className="bg-amber-500 hover:bg-amber-400 text-black font-bold" disabled={saving}>
+                  {saving ? "Saving…" : "Save Changes"}
                 </Button>
               </div>
             </form>
           </CardContent>
         </Card>
+        </div>
       </div>
     </div>
   );

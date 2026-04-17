@@ -63,19 +63,19 @@ export default function NewInnovationPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-2xl">
-      <Link href="/innovation" className="inline-flex items-center text-sm text-indigo-700 hover:text-indigo-800 mb-6">
-        <ArrowLeft className="mr-2 h-4 w-4" /> Back to Innovation Hub
+    <div className="container mx-auto px-5 py-8 max-w-2xl">
+      <Link href="/innovation" className="inline-flex items-center text-sm text-slate-500 hover:text-slate-900 mb-6 gap-1.5 font-semibold">
+        <ArrowLeft className="h-4 w-4" /> Back to Innovation Hub
       </Link>
       
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3 mb-2">
-            <div className="bg-indigo-100 p-2 rounded-lg">
-              <Lightbulb className="h-6 w-6 text-indigo-700" />
+            <div className="bg-amber-100 p-2 rounded-xl">
+              <Lightbulb className="h-5 w-5 text-amber-700" />
             </div>
             <div>
-              <CardTitle className="text-2xl">Submit an Idea</CardTitle>
+              <CardTitle className="text-xl font-bold">Submit an Idea</CardTitle>
               <CardDescription>Share your process improvements and operational solutions.</CardDescription>
             </div>
           </div>
@@ -141,9 +141,9 @@ export default function NewInnovationPage() {
             <Link href="/innovation">
               <Button type="button" variant="outline">Cancel</Button>
             </Link>
-            <Button type="submit" disabled={saving} className="bg-indigo-600 hover:bg-indigo-700">
+            <Button type="submit" disabled={saving} className="bg-amber-500 hover:bg-amber-400 text-black font-bold">
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Submit Idea for Review
+              Submit for Review
             </Button>
           </CardFooter>
         </form>

@@ -106,21 +106,26 @@ export default function OnboardingPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-12">
-        <p className="text-slate-600">Loading…</p>
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-12">
-      <div className="max-w-xl mx-auto">
-        <Card>
-          <CardHeader>
-            <CardTitle>Complete your profile</CardTitle>
-            <CardDescription>
-              This helps the system personalize content and route expert questions to the right people.
-            </CardDescription>
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-12">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <div className="w-12 h-12 rounded-2xl bg-amber-500 flex items-center justify-center mx-auto mb-4">
+            <span className="text-black font-bold text-lg">ET</span>
+          </div>
+          <h1 className="text-2xl font-bold text-slate-900">Complete your profile</h1>
+          <p className="text-slate-400 text-sm mt-1 font-normal">Helps route expert questions to the right people.</p>
+        </div>
+        <Card className="shadow-sm border-slate-100">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-bold">Your Details</CardTitle>
+            <CardDescription>This is shown to colleagues when they search for experts.</CardDescription>
           </CardHeader>
           <CardContent>
             {error && (
@@ -188,8 +193,8 @@ export default function OnboardingPage() {
               </div>
 
               <div className="flex items-center justify-end gap-3 pt-2">
-                <Button type="submit" className="bg-amber-600 hover:bg-amber-700" disabled={saving}>
-                  {saving ? "Saving…" : "Save & continue"}
+                <Button type="submit" className="bg-amber-500 hover:bg-amber-400 text-black font-bold" disabled={saving}>
+                  {saving ? "Saving…" : "Save & Continue"}
                 </Button>
               </div>
             </form>

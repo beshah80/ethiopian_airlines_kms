@@ -1,15 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Search, MapPin, Mail, Phone, Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Search, Users, Mail, Clock } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 type ExpertProfile = {
   id: string;
@@ -27,10 +24,15 @@ type ExpertProfile = {
   };
 };
 
+const availabilityStyle: Record<string, string> = {
+  available: "bg-emerald-500",
+  busy: "bg-amber-500",
+  offline: "bg-slate-300",
+};
+
 export default function ExpertsPage() {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
-
   const [loading, setLoading] = useState(true);
   const [experts, setExperts] = useState<ExpertProfile[]>([]);
   const [q, setQ] = useState("");
@@ -41,186 +43,161 @@ export default function ExpertsPage() {
       setLoading(true);
       const { data: auth } = await supabase.auth.getUser();
       let user = auth.user;
-      
-      if (!user && typeof window !== 'undefined') {
-        const demoStr = localStorage.getItem('kms_demo_profile');
-        if (demoStr) {
-          setLoading(false);
-          return;
-        }
-      }
 
-      if (!user) {
-        router.push("/login");
-        return;
+      if (!user && typeof window !== "undefined") {
+        const demoStr = localStorage.getItem("kms_demo_profile");
+        if (demoStr) { setLoading(false); return; }
       }
+      if (!user) { router.push("/login"); return; }
 
-      // We fetch all profiles marked as experts. In a real app with proper joins,
-      // we would use a unified view or join the expert_profiles table.
-      // For this prototype, we'll fetch them and their details.
       let query = supabase
         .from("user_profiles")
-        .select(`
-          id, first_name, last_name, email, department_id, role,
-          expert_details:expert_profiles(bio, areas_of_expertise, years_experience, availability_status, contact_preferences)
-        `)
+        .select(`id,first_name,last_name,email,department_id,role,expert_details:expert_profiles(bio,areas_of_expertise,years_experience,availability_status,contact_preferences)`)
         .eq("is_expert", true)
         .limit(50);
 
-      if (department !== "all") {
-        query = query.eq("department_id", department);
-      }
-      
+      if (department !== "all") query = query.eq("department_id", department);
+
       const { data } = await query;
-      
-      let filtered = (data ?? []) as any[];
-      
-      // Client-side text search for convenience in prototype
+      let filtered = (data ?? []) as unknown as ExpertProfile[];
+
       if (q.trim()) {
-        const lowerQ = q.toLowerCase();
-        filtered = filtered.filter(row => 
-          row.first_name.toLowerCase().includes(lowerQ) ||
-          row.last_name.toLowerCase().includes(lowerQ) ||
-          row.expert_details?.[0]?.areas_of_expertise?.join(" ").toLowerCase().includes(lowerQ)
+        const lq = q.toLowerCase();
+        filtered = filtered.filter((r) =>
+          r.first_name.toLowerCase().includes(lq) ||
+          r.last_name.toLowerCase().includes(lq) ||
+          (r.expert_details as unknown as { areas_of_expertise?: string[] })?.areas_of_expertise?.join(" ").toLowerCase().includes(lq)
         );
       }
 
-      // Flatten the array from details
-      const formatted = filtered.map(item => ({
+      const formatted = filtered.map((item) => ({
         ...item,
-        expert_details: item.expert_details?.[0] || {
+        expert_details: (item.expert_details as unknown as ExpertProfile["expert_details"][])?.[0] ?? {
           bio: "Senior Subject Matter Expert",
           areas_of_expertise: ["Operations", "Safety"],
           years_experience: 10,
           availability_status: "available",
-          contact_preferences: "email"
-        }
+          contact_preferences: "email",
+        },
       }));
 
       setExperts(formatted);
       setLoading(false);
     };
-
     load();
   }, [department, q, router, supabase]);
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
-        <div>
-          <div className="inline-flex items-center gap-2 text-amber-700 bg-amber-50 border border-amber-100 px-3 py-1 rounded-full text-xs font-medium mb-3">
-            <Users className="h-3.5 w-3.5" />
-            Tacit Knowledge mapping
-          </div>
-          <h1 className="text-3xl font-bold text-slate-900">Expert Locator</h1>
-          <p className="text-slate-600 mt-1">
-            Find and connect with subject matter experts across Ethiopian Airlines.
-          </p>
-        </div>
-      </div>
+    <div className="min-h-screen bg-slate-50">
+      <main className="container mx-auto px-5 py-10 max-w-6xl">
 
-      {/* Search & Filters */}
-      <Card className="mb-8">
-        <CardContent className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div className="md:col-span-2 relative">
-              <Search className="h-4 w-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <Input
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                placeholder="Search by name, skill, or aircraft (e.g., 'Hydraulics', 'A350')..."
-                className="pl-9"
-              />
+        {/* Header */}
+        <div className="mb-10">
+          <div className="inline-flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 rounded-full px-3 py-1 mb-3">
+            <Users className="h-3.5 w-3.5 text-amber-600" />
+            <span className="text-amber-700 text-xs font-bold tracking-widest uppercase">Tacit Knowledge</span>
+          </div>
+          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Expert Locator</h1>
+          <p className="text-slate-400 text-sm mt-1 font-normal">Find and connect with subject matter experts across Ethiopian Airlines.</p>
+        </div>
+
+        {/* Search */}
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-3 mb-8 flex flex-col sm:flex-row gap-2">
+          <div className="relative flex-1">
+            <Search className="h-4 w-4 text-slate-300 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <Input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Search by name, skill, or aircraft type..."
+              className="pl-10 h-10 bg-slate-50 border-none rounded-xl text-sm font-medium placeholder:text-slate-300 focus-visible:ring-1 focus-visible:ring-amber-500/30"
+            />
+          </div>
+          <select
+            value={department}
+            onChange={(e) => setDepartment(e.target.value)}
+            className="h-10 px-4 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase tracking-wider text-slate-500 cursor-pointer focus:outline-none focus:ring-1 focus:ring-amber-500/30"
+          >
+            <option value="all">All Departments</option>
+            <option value="flight_ops">Flight Operations</option>
+            <option value="engineering">Engineering & Maintenance</option>
+            <option value="customer_service">Customer Service</option>
+            <option value="ground_ops">Ground Operations</option>
+            <option value="training">Training (EAU)</option>
+          </select>
+        </div>
+
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-24 gap-3">
+            <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Loading experts...</p>
+          </div>
+        ) : experts.length === 0 ? (
+          <div className="py-24 text-center bg-white rounded-2xl border border-slate-100">
+            <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <Users className="h-7 w-7 text-slate-300" />
             </div>
-            <select
-              className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm"
-              value={department}
-              onChange={(e) => setDepartment(e.target.value)}
-            >
-              <option value="all">All Departments</option>
-              <option value="flight_ops">Flight Operations</option>
-              <option value="engineering">Engineering & Maintenance</option>
-              <option value="customer_service">Customer Service</option>
-              <option value="ground_ops">Ground Operations</option>
-              <option value="training">Training (EAU)</option>
-            </select>
+            <h3 className="font-bold text-slate-900 mb-1">No experts found</h3>
+            <p className="text-slate-400 text-sm font-normal">Try adjusting your search or department filter.</p>
           </div>
-        </CardContent>
-      </Card>
+        ) : (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {experts.map((expert) => {
+              const details = expert.expert_details;
+              const initials = `${expert.first_name?.[0] ?? ""}${expert.last_name?.[0] ?? ""}`;
+              const avail = details?.availability_status ?? "offline";
+              return (
+                <div key={expert.id} className="bg-white rounded-2xl border border-slate-100 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 overflow-hidden">
+                  <div className="p-5">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="relative">
+                          <div className="w-11 h-11 rounded-xl bg-amber-100 flex items-center justify-center text-amber-700 font-bold text-sm">
+                            {initials}
+                          </div>
+                          <span className={cn("absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white", availabilityStyle[avail])} />
+                        </div>
+                        <div>
+                          <div className="font-bold text-slate-900 text-sm">{expert.first_name} {expert.last_name}</div>
+                          <div className="text-xs text-slate-400 font-medium capitalize mt-0.5">
+                            {expert.role} · {details?.years_experience ?? "—"} yrs
+                          </div>
+                        </div>
+                      </div>
+                    </div>
 
-      {/* Results Grid */}
-      {loading ? (
-        <p className="text-slate-600">Loading experts...</p>
-      ) : experts.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <p className="text-slate-600">No experts found matching your criteria.</p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {experts.map((expert) => (
-            <Card key={expert.id} className="hover:shadow-md transition-shadow">
-              <CardHeader className="pb-3 border-b border-slate-100">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-12 w-12 border-2 border-white shadow-sm">
-                      <AvatarFallback className="bg-amber-100 text-amber-700 font-semibold text-lg">
-                        {expert.first_name?.[0]}
-                        {expert.last_name?.[0]}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <CardTitle className="text-lg text-slate-900">
-                        {expert.first_name} {expert.last_name}
-                      </CardTitle>
-                      <CardDescription className="text-sm font-medium mt-0.5 text-slate-500">
-                        {expert.role} • {expert.expert_details?.years_experience} yrs exp
-                      </CardDescription>
+                    <div className="mb-4">
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Expertise</div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {(details?.areas_of_expertise ?? []).slice(0, 4).map((tag) => (
+                          <span key={tag} className="text-[11px] font-semibold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-lg">
+                            {tag}
+                          </span>
+                        ))}
+                        {(!details?.areas_of_expertise?.length) && (
+                          <span className="text-xs text-slate-300">Not specified</span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  {expert.expert_details?.availability_status === 'available' && (
-                    <span className="flex h-3 w-3 rounded-full bg-green-500 ring-2 ring-white" title="Available"></span>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent className="pt-4">
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Areas of Expertise</h4>
-                    <div className="flex flex-wrap gap-1.5">
-                      {expert.expert_details?.areas_of_expertise?.map((tag) => (
-                        <Badge key={tag} className="bg-slate-100 text-slate-700 hover:bg-slate-200 border-none rounded">
-                          {tag}
-                        </Badge>
-                      ))}
-                      {(!expert.expert_details?.areas_of_expertise || expert.expert_details.areas_of_expertise.length === 0) && (
-                        <span className="text-sm text-slate-400">Not specified</span>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="flex flex-col gap-2 pt-2 text-sm text-slate-600">
-                    <div className="flex items-center gap-2">
-                       <MapPin className="h-4 w-4 text-slate-400" />
-                       <span className="capitalize">{expert.department_id.replace('_', ' ')}</span>
+
+                    <div className="text-[11px] text-slate-400 font-medium capitalize mb-4">
+                      {expert.department_id?.replace(/_/g, " ")}
                     </div>
                   </div>
 
-                  <div className="pt-2 border-t border-slate-100 flex gap-2">
-                    <Button className="w-full bg-slate-900 hover:bg-slate-800 gap-2 h-9 text-sm">
-                      <Mail className="h-4 w-4" /> Message
+                  <div className="px-5 py-3 bg-slate-50 border-t border-slate-100 flex gap-2">
+                    <Button className="flex-1 bg-slate-900 hover:bg-amber-500 hover:text-black text-white text-xs font-bold h-8 rounded-xl gap-1.5 transition-all">
+                      <Mail className="h-3.5 w-3.5" /> Message
                     </Button>
-                    <Button variant="outline" className="w-full gap-2 h-9 text-sm">
-                      Book Time
+                    <Button variant="outline" className="flex-1 text-xs font-bold h-8 rounded-xl gap-1.5">
+                      <Clock className="h-3.5 w-3.5" /> Book Time
                     </Button>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+              );
+            })}
+          </div>
+        )}
+      </main>
     </div>
   );
 }

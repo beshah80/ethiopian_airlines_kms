@@ -2,12 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Plane, Eye, EyeOff, AlertCircle, Lock, Mail, Loader2 } from "lucide-react";
+import { Plane, Eye, EyeOff, AlertCircle, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
@@ -20,54 +18,31 @@ export default function LoginPage() {
   const supabase = createClient();
 
   const attemptLogin = async (loginEmail: string, loginPass: string, isBypass = false) => {
-      if (isBypass) {
-        // Zero check bypass: No database call
-        const mockProfiles: Record<string, any> = {
-          "community@ethiopianairlines.com": { id: "d5038e19-7222-46f1-ac45-6282be5bc5a5", email: "community@ethiopianairlines.com", first_name: "Selam", last_name: "Community", role: "staff", department_id: "customer_service" },
-          "expert@ethiopianairlines.com": { id: "e8e20298-de4e-493e-aaa5-daa75cd6f2e0", email: "expert@ethiopianairlines.com", first_name: "Abebe", last_name: "Expert", role: "staff", department_id: "engineering", is_expert: true },
-          "admin@ethiopianairlines.com": { id: "abe8f2ef-e924-41c1-a771-ee71d8e7553d", email: "admin@ethiopianairlines.com", first_name: "System", last_name: "Admin", role: "admin", department_id: "it" }
-        };
+    if (isBypass) {
+      const mockProfiles: Record<string, object> = {
+        "community@ethiopianairlines.com": { id: "d5038e19-7222-46f1-ac45-6282be5bc5a5", email: "community@ethiopianairlines.com", first_name: "Selam", last_name: "Community", role: "staff", department_id: "customer_service" },
+        "expert@ethiopianairlines.com": { id: "e8e20298-de4e-493e-aaa5-daa75cd6f2e0", email: "expert@ethiopianairlines.com", first_name: "Abebe", last_name: "Expert", role: "staff", department_id: "engineering", is_expert: true },
+        "admin@ethiopianairlines.com": { id: "abe8f2ef-e924-41c1-a771-ee71d8e7553d", email: "admin@ethiopianairlines.com", first_name: "System", last_name: "Admin", role: "admin", department_id: "it" },
+      };
+      const profile = mockProfiles[loginEmail];
+      document.cookie = `kms_demo_profile=${encodeURIComponent(JSON.stringify(profile))}; path=/; max-age=86400; SameSite=Lax`;
+      localStorage.setItem("kms_demo_profile", JSON.stringify(profile));
+      window.location.replace("/dashboard");
+      return;
+    }
 
-        const profile = mockProfiles[loginEmail];
-        // Set cookie manually for middleware visibility - encode to handle special characters
-        document.cookie = `kms_demo_profile=${encodeURIComponent(JSON.stringify(profile))}; path=/; max-age=86400; SameSite=Lax`;
-        // Also set in localStorage for client components
-        localStorage.setItem('kms_demo_profile', JSON.stringify(profile));
-        
-        window.location.replace("/dashboard");
-        return;
-      }
-
-      setLoading(true);
-      setError(null);
-      try {
-        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-          email: loginEmail,
-          password: loginPass,
-        });
-
-        if (authError) {
-          setError(authError.message);
-          setLoading(false);
-          return;
-        }
-
-        if (!authData.user || !authData.session) {
-          setError("No session returned from request");
-          setLoading(false);
-          return;
-        }
-
-        await supabase.auth.setSession({
-          access_token: authData.session.access_token,
-          refresh_token: authData.session.refresh_token,
-        });
-
-        window.location.replace("/dashboard");
-      } catch (err) {
-        setError("An unexpected error occurred: " + (err instanceof Error ? err.message : String(err)));
-        setLoading(false);
-      }
+    setLoading(true);
+    setError(null);
+    try {
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({ email: loginEmail, password: loginPass });
+      if (authError) { setError(authError.message); setLoading(false); return; }
+      if (!authData.user || !authData.session) { setError("No session returned"); setLoading(false); return; }
+      await supabase.auth.setSession({ access_token: authData.session.access_token, refresh_token: authData.session.refresh_token });
+      window.location.replace("/dashboard");
+    } catch (err) {
+      setError("An unexpected error occurred: " + (err instanceof Error ? err.message : String(err)));
+      setLoading(false);
+    }
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -75,134 +50,142 @@ export default function LoginPage() {
     await attemptLogin(email, password);
   };
 
-
-
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-white relative overflow-hidden">
-      {/* Subtle Aesthetic Elements for Light Theme */}
-      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-green-600 via-amber-400 to-red-600 opacity-20" />
-      <div className="absolute -top-24 -left-24 w-96 h-96 bg-amber-500/5 rounded-full blur-3xl" />
-      <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl" />
-      
-      <div className="w-full max-w-md relative z-10">
-        <Card className="border border-slate-200 shadow-xl bg-white/80 backdrop-blur-xl overflow-hidden rounded-2xl">
-          <CardHeader className="space-y-1 pb-8 pt-10 text-center border-b border-slate-100">
-            <CardTitle className="text-3xl font-black tracking-tight text-slate-900 uppercase italic">
-              Access <span className="text-amber-600">Gateway</span>
-            </CardTitle>
-            <CardDescription className="text-slate-500 text-sm font-medium tracking-wide">
-              Secure Authentication Protocol
-            </CardDescription>
-          </CardHeader>
-          
-          <CardContent className="pt-8 px-8">
-            {error && (
-              <Alert className="mb-6 border-rose-200 bg-rose-50 text-rose-700">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription className="text-xs">{error}</AlertDescription>
-              </Alert>
-            )}
+    <div className="min-h-screen flex bg-white">
 
-            <form onSubmit={handleLogin} className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-slate-500 font-bold text-xs uppercase tracking-widest pl-1">
-                  Employee ID / Email
-                </Label>
-                <div className="relative group">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-amber-600 transition-colors" />
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="name@ethiopianairlines.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="pl-10 h-12 bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-amber-500 focus:ring-amber-500/20 transition-all rounded-xl"
-                  />
-                </div>
+      {/* ── LEFT — full bleed image ── */}
+      <div className="hidden lg:block lg:w-[55%] relative">
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: `url('/assets/background.jpg')`,
+            backgroundSize: "cover",
+            backgroundPosition: "center center",
+          }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/85 via-slate-900/20 to-slate-900/10" />
+
+        {/* Logo top-left — icon only, no text label */}
+        <div className="absolute top-8 left-8 z-10">
+          <div className="w-9 h-9 rounded-xl bg-amber-500 flex items-center justify-center shadow-lg">
+            <Plane className="h-4.5 w-4.5 text-black" />
+          </div>
+        </div>
+
+        {/* Bottom content */}
+        <div className="absolute bottom-10 left-10 right-10 z-10">
+          <h2 className="text-4xl font-bold text-white leading-tight mb-3">
+            Institutional<br />intelligence,<br />
+            <span className="text-amber-400">unified.</span>
+          </h2>
+          <p className="text-white/50 text-sm font-normal leading-relaxed max-w-xs">
+            From HAAB approaches to Bahir Dar ground ops — every piece of knowledge, one place.
+          </p>
+          <div className="flex gap-8 mt-7">
+            {[{ v: "33%", l: "Faster Onboarding" }, { v: "60s", l: "Search Time" }, { v: "4", l: "Crown Jewels" }].map((s) => (
+              <div key={s.l}>
+                <div className="text-2xl font-bold text-amber-400">{s.v}</div>
+                <div className="text-[11px] text-white/40 font-medium mt-0.5">{s.l}</div>
               </div>
+            ))}
+          </div>
+        </div>
+      </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-slate-500 font-bold text-xs uppercase tracking-widest pl-1">
-                  Access Key
-                </Label>
-                <div className="relative group">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-amber-600 transition-colors" />
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    className="pl-10 pr-10 h-12 bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-amber-500 focus:ring-amber-500/20 transition-all rounded-xl"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-900 transition-colors"
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-              </div>
+      {/* ── RIGHT — white form ── */}
+      <div className="flex-1 flex items-center justify-center px-8 py-12">
+        <div className="w-full max-w-sm">
 
-              <Button
-                type="submit"
-                className="w-full h-12 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-sm uppercase tracking-widest shadow-lg shadow-amber-500/20 transition-all duration-300 rounded-xl"
-                disabled={loading}
-              >
-                  {loading ? (
-                    <span className="flex items-center gap-2">
-                      <Loader2 className="animate-spin h-4 w-4" />
-                      Decrypting...
-                    </span>
-                  ) : (
-                    "Authorize Session"
-                  )}
-                </Button>
-            </form>
+          {/* Mobile logo */}
+          <div className="flex items-center gap-2.5 mb-10 lg:hidden">
+            <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center">
+              <Plane className="h-4 w-4 text-black" />
+            </div>
+            <span className="text-slate-900 font-bold text-sm">Ethiopian Airlines</span>
+          </div>
 
-            <div className="mt-10 mb-8 relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-slate-100" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white px-4 text-slate-400 font-bold tracking-[0.2em]">Quick Bypass</span>
+          <div className="mb-8">
+            <h1 className="text-2xl font-bold text-slate-900 mb-1">Welcome back</h1>
+            <p className="text-slate-400 text-sm font-normal">Sign in to your Ethiopian Airlines account.</p>
+          </div>
+
+          {error && (
+            <Alert className="mb-5 border-rose-200 bg-rose-50 text-rose-700">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="text-xs">{error}</AlertDescription>
+            </Alert>
+          )}
+
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-slate-500 text-xs font-bold uppercase tracking-widest">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="name@ethiopianairlines.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="h-11 bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-300 focus-visible:border-amber-500 focus-visible:ring-amber-500/20 rounded-xl"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="password" className="text-slate-500 text-xs font-bold uppercase tracking-widest">Password</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="h-11 pr-10 bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-300 focus-visible:border-amber-500 focus-visible:ring-amber-500/20 rounded-xl"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-600 transition-colors"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-3 mb-10">
-               <div className="grid grid-cols-3 gap-3">
-                  <button 
-                    type="button"
-                    className="py-3 px-2 rounded-xl border border-slate-100 bg-slate-50 hover:bg-slate-100 text-[10px] font-bold text-slate-600 transition-all uppercase tracking-tight"
-                    onClick={() => attemptLogin("community@ethiopianairlines.com", "community123", true)}
-                  >
-                    Staff
-                  </button>
-                  <button 
-                    type="button"
-                    className="py-3 px-2 rounded-xl border border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/10 text-[10px] font-bold text-amber-600 transition-all uppercase tracking-tight"
-                    onClick={() => attemptLogin("expert@ethiopianairlines.com", "expert123", true)}
-                  >
-                    Expert
-                  </button>
-                  <button 
-                    type="button"
-                    className="py-3 px-2 rounded-xl border border-rose-500/20 bg-rose-500/5 hover:bg-rose-500/10 text-[10px] font-bold text-rose-600 transition-all uppercase tracking-tight"
-                    onClick={() => attemptLogin("admin@ethiopianairlines.com", "admin123", true)}
-                  >
-                    Root
-                  </button>
-               </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full h-11 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-black font-bold text-sm rounded-xl transition-colors flex items-center justify-center gap-2 mt-1"
+            >
+              {loading ? <><Loader2 className="h-4 w-4 animate-spin" /> Signing in...</> : "Sign In"}
+            </button>
+          </form>
+
+          <div className="mt-8">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex-1 h-px bg-slate-100" />
+              <span className="text-slate-300 text-[11px] font-bold uppercase tracking-widest">Demo Access</span>
+              <div className="flex-1 h-px bg-slate-100" />
             </div>
-          </CardContent>
-        </Card>
-        
-        <p className="mt-8 text-center text-[10px] uppercase tracking-[0.3em] text-slate-400 font-bold">
-          Strategic Knowledge Gateway <span className="text-slate-200 mx-2">|</span> v1.0.42
-        </p>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { label: "Staff", email: "community@ethiopianairlines.com", pass: "community123" },
+                { label: "Expert", email: "expert@ethiopianairlines.com", pass: "expert123" },
+                { label: "Admin", email: "admin@ethiopianairlines.com", pass: "admin123" },
+              ].map((d) => (
+                <button
+                  key={d.label}
+                  type="button"
+                  onClick={() => attemptLogin(d.email, d.pass, true)}
+                  className="h-9 rounded-xl border border-slate-200 bg-slate-50 hover:bg-amber-50 hover:border-amber-300 text-slate-500 hover:text-amber-700 text-xs font-bold transition-all uppercase tracking-wide"
+                >
+                  {d.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+        </div>
       </div>
     </div>
   );
