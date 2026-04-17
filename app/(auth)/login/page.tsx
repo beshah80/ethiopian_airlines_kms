@@ -51,10 +51,10 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex bg-white">
+    <div className="min-h-screen flex">
 
-      {/* ── LEFT — full bleed image ── */}
-      <div className="hidden lg:block lg:w-[55%] relative">
+      {/* LEFT — full image */}
+      <div className="hidden lg:block lg:w-[55%] relative overflow-hidden">
         <div
           className="absolute inset-0"
           style={{
@@ -63,128 +63,140 @@ export default function LoginPage() {
             backgroundPosition: "center center",
           }}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/85 via-slate-900/20 to-slate-900/10" />
+        {/* Richer gradient — dark at corners, lighter in center */}
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-900/75 via-slate-900/35 to-slate-900/75" />
 
-        {/* Logo top-left — icon only, no text label */}
-        <div className="absolute top-8 left-8 z-10">
-          <div className="w-9 h-9 rounded-xl bg-amber-500 flex items-center justify-center shadow-lg">
-            <Plane className="h-4.5 w-4.5 text-black" />
+        {/* Icon top-left */}
+        <div className="absolute top-10 left-10 z-10">
+          <div className="w-11 h-11 rounded-2xl bg-amber-500 flex items-center justify-center shadow-xl shadow-black/25">
+            <Plane className="h-5 w-5 text-black" />
           </div>
         </div>
 
-        {/* Bottom content */}
-        <div className="absolute bottom-10 left-10 right-10 z-10">
-          <h2 className="text-4xl font-bold text-white leading-tight mb-3">
+        {/* Bottom text */}
+        <div className="absolute bottom-12 left-10 right-10 z-10">
+          <h2 className="text-4xl font-bold text-white leading-[1.15] mb-4">
             Institutional<br />intelligence,<br />
             <span className="text-amber-400">unified.</span>
           </h2>
-          <p className="text-white/50 text-sm font-normal leading-relaxed max-w-xs">
+          <p className="text-white/55 text-base font-normal leading-relaxed mb-8 max-w-xs">
             From HAAB approaches to Bahir Dar ground ops — every piece of knowledge, one place.
           </p>
-          <div className="flex gap-8 mt-7">
-            {[{ v: "33%", l: "Faster Onboarding" }, { v: "60s", l: "Search Time" }, { v: "4", l: "Crown Jewels" }].map((s) => (
+          <div className="flex gap-10">
+            {[
+              { v: "33%", l: "Faster Onboarding" },
+              { v: "60s", l: "Search Time" },
+              { v: "4", l: "Crown Jewels" },
+            ].map((s) => (
               <div key={s.l}>
                 <div className="text-2xl font-bold text-amber-400">{s.v}</div>
-                <div className="text-[11px] text-white/40 font-medium mt-0.5">{s.l}</div>
+                <div className="text-xs text-white/40 font-medium mt-1 tracking-wide">{s.l}</div>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      {/* ── RIGHT — white form ── */}
-      <div className="flex-1 flex items-center justify-center px-8 py-12">
-        <div className="w-full max-w-sm">
+      {/* RIGHT — form on slate-50 background */}
+      <div className="flex-1 flex items-center justify-center px-8 py-12 bg-slate-50">
+        <div className="w-full max-w-md">
 
-          {/* Mobile logo */}
-          <div className="flex items-center gap-2.5 mb-10 lg:hidden">
-            <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center">
-              <Plane className="h-4 w-4 text-black" />
+          {/* Mobile icon */}
+          <div className="flex justify-center mb-8 lg:hidden">
+            <div className="w-11 h-11 rounded-2xl bg-amber-500 flex items-center justify-center shadow-lg">
+              <Plane className="h-5 w-5 text-black" />
             </div>
-            <span className="text-slate-900 font-bold text-sm">Ethiopian Airlines</span>
           </div>
 
-          <div className="mb-8">
-            <h1 className="text-2xl font-bold text-slate-900 mb-1">Welcome back</h1>
-            <p className="text-slate-400 text-sm font-normal">Sign in to your Ethiopian Airlines account.</p>
-          </div>
+          {/* Card */}
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-xl shadow-slate-200/60 p-8">
 
-          {error && (
-            <Alert className="mb-5 border-rose-200 bg-rose-50 text-rose-700">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription className="text-xs">{error}</AlertDescription>
-            </Alert>
-          )}
-
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-slate-500 text-xs font-bold uppercase tracking-widest">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="name@ethiopianairlines.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="h-11 bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-300 focus-visible:border-amber-500 focus-visible:ring-amber-500/20 rounded-xl"
-              />
+            <div className="mb-8">
+              <h1 className="text-2xl font-bold text-slate-900 mb-1.5">Welcome back</h1>
+              <p className="text-slate-400 text-sm font-normal">Sign in to your Ethiopian Airlines account.</p>
             </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="password" className="text-slate-500 text-xs font-bold uppercase tracking-widest">Password</Label>
-              <div className="relative">
+            {error && (
+              <Alert className="mb-5 border-rose-200 bg-rose-50 text-rose-700">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="text-xs">{error}</AlertDescription>
+              </Alert>
+            )}
+
+            <form onSubmit={handleLogin} className="space-y-5">
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-slate-500 text-xs font-bold uppercase tracking-widest">
+                  Email
+                </Label>
                 <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  id="email"
+                  type="email"
+                  placeholder="name@ethiopianairlines.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="h-11 pr-10 bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-300 focus-visible:border-amber-500 focus-visible:ring-amber-500/20 rounded-xl"
+                  className="h-12 bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-300 focus-visible:border-amber-500 focus-visible:ring-amber-500/20 rounded-xl"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-600 transition-colors"
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-slate-500 text-xs font-bold uppercase tracking-widest">
+                  Password
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="h-12 pr-11 bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-300 focus-visible:border-amber-500 focus-visible:ring-amber-500/20 rounded-xl"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-600 transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full h-12 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-black font-bold text-sm rounded-xl transition-all shadow-lg shadow-amber-500/25 hover:shadow-xl hover:shadow-amber-500/30 flex items-center justify-center gap-2"
+              >
+                {loading ? <><Loader2 className="h-4 w-4 animate-spin" /> Signing in...</> : "Sign In"}
+              </button>
+            </form>
+
+            <div className="mt-8">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex-1 h-px bg-slate-100" />
+                <span className="text-slate-300 text-[11px] font-bold uppercase tracking-widest">Demo Access</span>
+                <div className="flex-1 h-px bg-slate-100" />
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { label: "Staff", email: "community@ethiopianairlines.com", pass: "community123" },
+                  { label: "Expert", email: "expert@ethiopianairlines.com", pass: "expert123" },
+                  { label: "Admin", email: "admin@ethiopianairlines.com", pass: "admin123" },
+                ].map((d) => (
+                  <button
+                    key={d.label}
+                    type="button"
+                    onClick={() => attemptLogin(d.email, d.pass, true)}
+                    className="h-10 rounded-xl border border-slate-200 bg-slate-50 hover:bg-amber-50 hover:border-amber-300 text-slate-500 hover:text-amber-700 text-xs font-bold transition-all uppercase tracking-wide"
+                  >
+                    {d.label}
+                  </button>
+                ))}
               </div>
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full h-11 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-black font-bold text-sm rounded-xl transition-colors flex items-center justify-center gap-2 mt-1"
-            >
-              {loading ? <><Loader2 className="h-4 w-4 animate-spin" /> Signing in...</> : "Sign In"}
-            </button>
-          </form>
-
-          <div className="mt-8">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="flex-1 h-px bg-slate-100" />
-              <span className="text-slate-300 text-[11px] font-bold uppercase tracking-widest">Demo Access</span>
-              <div className="flex-1 h-px bg-slate-100" />
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { label: "Staff", email: "community@ethiopianairlines.com", pass: "community123" },
-                { label: "Expert", email: "expert@ethiopianairlines.com", pass: "expert123" },
-                { label: "Admin", email: "admin@ethiopianairlines.com", pass: "admin123" },
-              ].map((d) => (
-                <button
-                  key={d.label}
-                  type="button"
-                  onClick={() => attemptLogin(d.email, d.pass, true)}
-                  className="h-9 rounded-xl border border-slate-200 bg-slate-50 hover:bg-amber-50 hover:border-amber-300 text-slate-500 hover:text-amber-700 text-xs font-bold transition-all uppercase tracking-wide"
-                >
-                  {d.label}
-                </button>
-              ))}
-            </div>
           </div>
-
         </div>
       </div>
     </div>
