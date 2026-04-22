@@ -19,6 +19,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
+import i18n from "@/lib/i18n";
 
 const navItems: { href: string; label: string; icon: any }[] = [];
 
@@ -87,11 +88,17 @@ export function SiteHeader() {
                 <Globe className="h-4 w-4 group-hover:scale-110 transition-transform" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-32 p-1 rounded-xl shadow-xl border-slate-200">
-                <DropdownMenuItem className="flex items-center justify-between py-2 rounded-lg cursor-pointer font-bold text-xs">
-                  English <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                <DropdownMenuItem 
+                  onClick={() => i18n.changeLanguage('en')}
+                  className="flex items-center justify-between py-2 rounded-lg cursor-pointer font-bold text-xs"
+                >
+                  English {i18n.language === 'en' && <CheckCircle2 className="h-3 w-3 text-emerald-500" />}
                 </DropdownMenuItem>
-                <DropdownMenuItem className="flex items-center justify-between py-2 rounded-lg cursor-pointer font-bold text-xs text-slate-400">
-                  አማርኛ (Soon)
+                <DropdownMenuItem 
+                  onClick={() => i18n.changeLanguage('am')}
+                  className="flex items-center justify-between py-2 rounded-lg cursor-pointer font-bold text-xs"
+                >
+                  አማርኛ {i18n.language === 'am' && <CheckCircle2 className="h-3 w-3 text-emerald-500" />}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

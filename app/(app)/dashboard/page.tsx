@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useAuth, UserProfile } from "@/lib/hooks/use-auth";
+import { useTranslation } from "react-i18next";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -40,6 +41,7 @@ const tabConfig: Record<Tab, { label: string; icon: any; color: string; bg: stri
 
 // ── Main Component ─────────────────────────────────────────────────────────
 export default function DashboardPage() {
+  const { t } = useTranslation();
   const { profile, loading: authLoading, supabase } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>("pulse");
   const [selectedItem, setSelectedItem] = useState<SelectedItem>(null);
@@ -159,14 +161,14 @@ export default function DashboardPage() {
         <aside className="hidden lg:flex flex-col gap-4">
           <Card className="p-4 border-none shadow-sm rounded-xl bg-white">
             <nav className="space-y-1">
-              {(Object.keys(tabConfig) as Tab[]).map((t) => {
-                const config = tabConfig[t];
+              {(Object.keys(tabConfig) as Tab[]).map((tab) => {
+                const config = tabConfig[tab];
                 const Icon = config.icon;
-                const active = activeTab === t;
+                const active = activeTab === tab;
                 return (
                   <button
-                    key={t}
-                    onClick={() => { setActiveTab(t); setSearchQ(""); }}
+                    key={tab}
+                    onClick={() => { setActiveTab(tab); setSearchQ(""); }}
                     className={cn(
                       "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold transition-all group",
                       active ? "bg-amber-50 text-amber-700 shadow-sm" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
@@ -175,7 +177,7 @@ export default function DashboardPage() {
                     <div className={cn("p-1.5 rounded-md", active ? "bg-amber-500 text-white" : "bg-slate-100 text-slate-500 group-hover:bg-slate-200")}>
                       <Icon className="h-4 w-4" />
                     </div>
-                    {config.label}
+                    {t(`nav.${tab}`)}
                   </button>
                 );
               })}
@@ -224,19 +226,19 @@ export default function DashboardPage() {
         <main className="flex flex-col gap-4">
           {/* Mobile Header / Tab Switcher */}
           <div className="lg:hidden flex overflow-x-auto gap-2 pb-2 scrollbar-hide">
-             {(Object.keys(tabConfig) as Tab[]).map((t) => {
-                const config = tabConfig[t];
-                const active = activeTab === t;
+             {(Object.keys(tabConfig) as Tab[]).map((tab) => {
+                const config = tabConfig[tab];
+                const active = activeTab === tab;
                 return (
                   <button
-                    key={t}
-                    onClick={() => setActiveTab(t)}
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
                     className={cn(
                       "whitespace-nowrap px-4 py-2 rounded-full text-xs font-bold transition-all",
                       active ? "bg-amber-500 text-white shadow-md" : "bg-white text-slate-600 border border-slate-200"
                     )}
                   >
-                    {config.label}
+                    {t(`nav.${tab}`)}
                   </button>
                 );
               })}
