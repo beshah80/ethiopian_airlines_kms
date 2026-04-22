@@ -1,5 +1,9 @@
+"use client";
+
 import Link from "next/link";
+import { useRef } from "react";
 import { BookOpen, Users, Lightbulb, Shield, Globe, Plane, ArrowRight, TrendingUp } from "lucide-react";
+import { motion, useScroll, useTransform } from "framer-motion";
 
 const features = [
   { icon: BookOpen, label: "Knowledge Base", desc: "SOPs, manuals & best practices — searchable, bilingual, versioned.", href: "/knowledge" },
@@ -18,23 +22,45 @@ const personas = [
 ];
 
 export default function HomePage() {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const fullText = "One system.\nAll the knowledge.";
+
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start start", "end start"],
+  });
+
+  const backgroundY = useTransform(scrollYProgress, [0, 1], ["0%", "15%"]);
+  const backgroundScale = useTransform(scrollYProgress, [0, 1], [1.05, 1.12]);
+
   return (
     <div className="min-h-screen bg-white text-slate-900">
-
-      {/* ── HERO — full image background, nav inside ── */}
-      <section className="relative min-h-screen flex flex-col">
-
-        {/* Full-screen background image */}
-        <div
-          className="absolute inset-0"
-          style={{
-            backgroundImage: `url('/assets/background.jpg')`,
-            backgroundSize: "cover",
-            backgroundPosition: "center center",
-          }}
-        />
-        {/* Overlay — same as login */}
-        <div className="absolute inset-0 bg-slate-900/55" />
+      {/* ── HERO — full image background with parallax, typewriter, and scroll indicator ── */}
+      <section ref={containerRef} className="relative min-h-screen flex flex-col overflow-hidden">
+        {/* Parallax Background Image */}
+        <motion.div
+          style={{ y: backgroundY, scale: backgroundScale }}
+          className="absolute inset-0 z-0"
+        >
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage: `url('/assets/background.jpg')`,
+              backgroundSize: "cover",
+              backgroundPosition: "center center",
+            }}
+          />
+          {/* Dark overlay with gradient for depth */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/70"></div>
+          {/* Subtle noise texture */}
+          <motion.div
+            initial={{ backgroundPosition: "0% 0%" }}
+            animate={{ backgroundPosition: ["0% 0%", "100% 100%"] }}
+            transition={{ repeat: Infinity, duration: 200, ease: "linear" }}
+            className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] mix-blend-overlay"
+          />
+        </motion.div>
 
         {/* NAV — transparent, over image */}
         <nav className="relative z-20 flex items-center justify-between px-8 md:px-14 h-16 pt-2">
@@ -61,50 +87,45 @@ export default function HomePage() {
           </div>
         </nav>
 
-        {/* HERO CONTENT — centered vertically in remaining space */}
-        <div className="relative z-10 flex-1 flex items-center px-8 md:px-14">
-          <div className="max-w-2xl">
-            <h1 className="text-5xl md:text-7xl font-bold leading-[1.05] tracking-tight text-white mb-6">
-              One system.<br />
-              <span className="text-amber-400">All the knowledge.</span>
-            </h1>
+        {/* HERO CONTENT — centered vertically with animations */}
+        <div className="relative z-10 flex-1 flex items-center justify-center px-8 md:px-14">
+          <div className="max-w-3xl text-center">
+            <motion.h1
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+              className="text-5xl md:text-7xl font-extrabold leading-[1.05] tracking-tight text-white mb-6"
+            >
+              <span className="whitespace-pre-line">{fullText}</span>
+            </motion.h1>
 
-            <p className="text-white/60 text-lg leading-relaxed mb-10 font-normal max-w-lg">
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1, delay: 0.5, ease: "easeOut" }}
+              className="text-white/80 text-lg md:text-xl leading-relaxed mb-10 font-normal max-w-2xl mx-auto"
+            >
               Institutional intelligence — captured, searchable, and accessible to every employee from Addis to Bahir Dar.
-            </p>
+            </motion.p>
 
-            <div className="flex items-center gap-4">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.8 }}
+              className="flex justify-center"
+            >
               <Link href="/login">
-                <button className="h-12 px-8 bg-amber-500 hover:bg-amber-400 text-black font-bold text-sm rounded-xl transition-colors flex items-center gap-2 shadow-lg shadow-amber-500/20">
-                  Access Knowledge Base <ArrowRight className="h-4 w-4" />
+                <button className="group relative h-12 px-8 bg-amber-500 hover:bg-amber-400 text-black font-bold text-sm rounded-xl transition-all duration-300 transform hover:scale-105 hover:-translate-y-0.5 flex items-center gap-2 shadow-lg shadow-amber-500/20 overflow-hidden">
+                  <span className="relative z-10 flex items-center gap-2">
+                    Access Knowledge Base <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                  </span>
+                  <div className="absolute inset-0 bg-gradient-to-r from-amber-400/0 via-white/20 to-amber-400/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
                 </button>
               </Link>
-              <Link href="#features">
-                <button className="h-12 px-6 text-sm font-semibold text-white/60 hover:text-white transition-colors">
-                  Explore Features
-                </button>
-              </Link>
-            </div>
+            </motion.div>
           </div>
         </div>
 
-        {/* Stats strip at bottom of hero */}
-        <div className="relative z-10 border-t border-white/10 bg-black/20 backdrop-blur-sm">
-          <div className="px-8 md:px-14">
-            <div className="grid grid-cols-3 divide-x divide-white/10 max-w-lg">
-              {[
-                { value: "33%", label: "Faster Onboarding" },
-                { value: "60s", label: "vs 30min Search" },
-                { value: "4", label: "Crown Jewels" },
-              ].map((s) => (
-                <div key={s.label} className="py-5 px-6 first:pl-0">
-                  <div className="text-2xl font-bold text-amber-400">{s.value}</div>
-                  <div className="text-[11px] text-white/40 font-medium tracking-wider uppercase mt-0.5">{s.label}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
       </section>
 
       {/* ── FEATURES ── */}
@@ -141,7 +162,7 @@ export default function HomePage() {
               { n: "03", title: "Improve", body: "Ideas get voted on, reviewed, and implemented. Knowledge compounds over time." },
             ].map((step) => (
               <div key={step.n} className="flex gap-5">
-                <span className="text-5xl font-bold text-slate-100 leading-none select-none shrink-0">{step.n}</span>
+                <span className="text-5xl font-bold text-slate-200 leading-none select-none shrink-0">{step.n}</span>
                 <div>
                   <h3 className="font-bold text-slate-900 text-base mb-2">{step.title}</h3>
                   <p className="text-slate-400 text-sm leading-relaxed font-normal">{step.body}</p>

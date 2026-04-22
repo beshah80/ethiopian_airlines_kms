@@ -1,264 +1,785 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import type { User } from "@supabase/supabase-js";
-import { Button } from "@/components/ui/button";
-import {
-  BookOpen, Users, Lightbulb, LogOut, Shield,
-  ArrowRight, FileText, TrendingUp, Plus,
-  Settings, BarChart2, CheckSquare, Video, Star
-} from "lucide-react";
+import { useEffect, useState, useRef } from "react";
 import { useAuth, UserProfile } from "@/lib/hooks/use-auth";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+import { 
+  motion, 
+  AnimatePresence 
+} from "framer-motion";
+import {
+  BookOpen, Users, Lightbulb, Shield, Search,
+  Eye, ThumbsUp, TrendingUp, Star, Mail, Plus,
+  AlertTriangle, Calendar, Settings, Plane, Target,
+  X, ChevronRight, Filter, MessageSquare, Info,
+  CheckCircle2, Clock, MapPin, ExternalLink, ArrowLeft
+} from "lucide-react";
 
-// ── Role-specific action configs ──────────────────────────────────────────────
+// ── Types ──────────────────────────────────────────────────────────────────
+type Article = { id: string; title: string; category: string; updated_at: string; helpful_count: number; view_count: number; language: string; content?: string; author_id?: string; author_name?: string; };
+type Expert = { id: string; first_name: string; last_name: string; department_id: string; expertise_tags?: string[]; seniority_level?: number; email: string; bio?: string; };
+type Idea = { id: string; title: string; description: string; department: string; estimated_impact: string; status: string; votes: number; created_at: string; submitted_by_name?: string; };
+type Lesson = { id: string; title: string; incident_date: string; department: string; aircraft_type: string | null; summary: string; root_cause: string; corrective_action: string; preventability: string; created_at: string; };
 
-const staffActions = [
-  { href: "/knowledge", icon: BookOpen, label: "Knowledge Base", desc: "Search SOPs & procedures", color: "bg-amber-50 text-amber-600" },
-  { href: "/experts", icon: Users, label: "Find an Expert", desc: "Ask a subject matter expert", color: "bg-blue-50 text-blue-600" },
-  { href: "/lessons-learned", icon: Shield, label: "Lessons Learned", desc: "Browse incident reports", color: "bg-rose-50 text-rose-600" },
-  { href: "/innovation", icon: Lightbulb, label: "Submit an Idea", desc: "Propose an improvement", color: "bg-violet-50 text-violet-600" },
-];
+type Tab = "pulse" | "knowledge" | "experts" | "lessons" | "innovation";
+type SelectedItem = { type: string; data: any } | null;
+type ActiveForm = Tab | null;
 
-const expertActions = [
-  { href: "/knowledge/new", icon: Plus, label: "Add Knowledge", desc: "Document your expertise", color: "bg-amber-50 text-amber-600" },
-  { href: "/lessons-learned/new", icon: Shield, label: "Log an AAR", desc: "Record a lessons learned", color: "bg-rose-50 text-rose-600" },
-  { href: "/knowledge", icon: Video, label: "Knowledge Base", desc: "Browse & update articles", color: "bg-blue-50 text-blue-600" },
-  { href: "/experts", icon: Star, label: "Expert Directory", desc: "View your expert profile", color: "bg-emerald-50 text-emerald-600" },
-];
-
-const adminActions = [
-  { href: "/knowledge", icon: FileText, label: "All Articles", desc: "Review & manage content", color: "bg-amber-50 text-amber-600" },
-  { href: "/experts", icon: Users, label: "Manage Experts", desc: "Expert profiles & access", color: "bg-blue-50 text-blue-600" },
-  { href: "/innovation", icon: BarChart2, label: "Innovation Pipeline", desc: "Review submitted ideas", color: "bg-violet-50 text-violet-600" },
-  { href: "/lessons-learned", icon: CheckSquare, label: "AAR Database", desc: "Incident reports & trends", color: "bg-rose-50 text-rose-600" },
-];
-
-const roleConfig = {
-  admin: {
-    label: "Administrator",
-    badge: "bg-rose-100 text-rose-700",
-    greeting: "System Overview",
-    subtitle: "Manage content, users, and organizational knowledge.",
-    actions: adminActions,
-    statsLabels: ["Total Articles", "Active Experts", "Open Ideas"],
-  },
-  expert: {
-    label: "Expert",
-    badge: "bg-amber-100 text-amber-700",
-    greeting: "Knowledge Hub",
-    subtitle: "Share your expertise and contribute to the organization.",
-    actions: expertActions,
-    statsLabels: ["My Articles", "My Contributions", "SOPs Acknowledged"],
-  },
-  staff: {
-    label: "Staff",
-    badge: "bg-blue-100 text-blue-700",
-    greeting: "Welcome back",
-    subtitle: "Find knowledge, connect with experts, and share ideas.",
-    actions: staffActions,
-    statsLabels: ["Total Articles", "Active Experts", "My Ideas"],
-  },
+// ── UI Constants ───────────────────────────────────────────────────────────
+const tabConfig: Record<Tab, { label: string; icon: any; color: string; bg: string; border: string }> = {
+  pulse: { label: "Global Pulse", icon: TrendingUp, color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-200" },
+  knowledge: { label: "Knowledge Base", icon: BookOpen, color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-200" },
+  experts: { label: "Expert Locator", icon: Users, color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-200" },
+  lessons: { label: "Lessons Learned", icon: Shield, color: "text-rose-600", bg: "bg-rose-50", border: "border-rose-200" },
+  innovation: { label: "Innovation Hub", icon: Lightbulb, color: "text-violet-600", bg: "bg-violet-50", border: "border-violet-200" },
 };
 
-function getRoleKey(profile: UserProfile | null): "admin" | "expert" | "staff" {
-  if (!profile) return "staff";
-  if (profile.role === "admin") return "admin";
-  if (profile.is_expert || profile.role === "expert") return "expert";
-  return "staff";
-}
-
+// ── Main Component ─────────────────────────────────────────────────────────
 export default function DashboardPage() {
-  const { profile, loading, logout, supabase } = useAuth();
-  const [stats, setStats] = useState([0, 0, 0]);
+  const { profile, loading: authLoading, supabase } = useAuth();
+  const [activeTab, setActiveTab] = useState<Tab>("pulse");
+  const [selectedItem, setSelectedItem] = useState<SelectedItem>(null);
+  const [activeForm, setActiveForm] = useState<ActiveForm>(null);
 
+  // Data states
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [experts, setExperts] = useState<Expert[]>([]);
+  const [ideas, setIdeas] = useState<Idea[]>([]);
+  const [lessons, setLessons] = useState<Lesson[]>([]);
+  
+  // UI states
+  const [searchQ, setSearchQ] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [loadingData, setLoadingData] = useState(false);
+  const [stats, setStats] = useState({ totalArticles: 0, activeExperts: 0, pendingIdeas: 0 });
+
+  // Load Feed Data
   useEffect(() => {
-    if (!profile) return;
-
-    const fetchStats = async () => {
-      let s0 = 0, s1 = 0, s2 = 0;
-      const roleKey = getRoleKey(profile);
-      const userId = profile.id;
-
-      try {
-        if (roleKey === "admin") {
-          const { count: tc } = await supabase.from("knowledge_articles").select("*", { count: "exact", head: true });
-          const { count: ec } = await supabase.from("user_profiles").select("*", { count: "exact", head: true }).eq("is_expert", true);
-          const { count: ic } = await supabase.from("innovation_ideas").select("*", { count: "exact", head: true }).eq("status", "submitted");
-          s0 = tc || 0; s1 = ec || 0; s2 = ic || 0;
-        } else if (roleKey === "expert") {
-          const { count: mc } = await supabase.from("knowledge_articles").select("*", { count: "exact", head: true }).eq("author_id", userId);
-          const { count: tc } = await supabase.from("knowledge_articles").select("*", { count: "exact", head: true });
-          const { count: sa } = await supabase.from("sop_acknowledgments").select("*", { count: "exact", head: true }).eq("user_id", userId);
-          s0 = mc || 0; s1 = tc || 0; s2 = sa || 0;
-        } else {
-          const { count: tc } = await supabase.from("knowledge_articles").select("*", { count: "exact", head: true });
-          const { count: ec } = await supabase.from("user_profiles").select("*", { count: "exact", head: true }).eq("is_expert", true);
-          const { count: ic } = await supabase.from("innovation_ideas").select("*", { count: "exact", head: true }).eq("submitted_by", userId);
-          s0 = tc || 0; s1 = ec || 0; s2 = ic || 0;
+    if (authLoading || !profile) return;
+    
+    const fetchData = async () => {
+      setLoadingData(true);
+      if (activeTab === "pulse") {
+        const [k, e, i, l] = await Promise.all([
+          supabase.from("knowledge_articles").select("*").eq("status", "published").order("updated_at", { ascending: false }).limit(5),
+          supabase.from("user_profiles").select("*").eq("is_expert", true).limit(3),
+          supabase.from("innovation_ideas").select("*").order("votes", { ascending: false }).limit(5),
+          supabase.from("lessons_learned").select("*").order("incident_date", { ascending: false }).limit(5)
+        ]);
+        setArticles((k.data ?? []) as Article[]);
+        setExperts((e.data ?? []) as Expert[]);
+        setIdeas((i.data ?? []) as Idea[]);
+        setLessons((l.data ?? []) as Lesson[]);
+      } else if (activeTab === "knowledge") {
+        let q = supabase.from("knowledge_articles").select("*").eq("status", "published").order("updated_at", { ascending: false });
+        if (categoryFilter !== "all") q = q.eq("category", categoryFilter);
+        if (searchQ.trim()) q = q.ilike("title", `%${searchQ.trim()}%`);
+        const { data } = await q.limit(20);
+        setArticles((data ?? []) as Article[]);
+      } else if (activeTab === "experts") {
+        let q = supabase.from("user_profiles").select("*").eq("is_expert", true);
+        const { data } = await q.limit(20);
+        let filtered = (data ?? []) as Expert[];
+        if (searchQ.trim()) {
+          const lq = searchQ.toLowerCase();
+          filtered = filtered.filter(e => `${e.first_name} ${e.last_name}`.toLowerCase().includes(lq) || e.expertise_tags?.some(t => t.toLowerCase().includes(lq)));
         }
-      } catch (e) {
-        console.error("Stats fetch error:", e);
+        setExperts(filtered);
+      } else if (activeTab === "innovation") {
+        let q = supabase.from("innovation_ideas").select("*").order("votes", { ascending: false });
+        if (searchQ.trim()) q = q.ilike("title", `%${searchQ.trim()}%`);
+        const { data } = await q.limit(20);
+        setIdeas((data ?? []) as Idea[]);
+      } else if (activeTab === "lessons") {
+        let q = supabase.from("lessons_learned").select("*").order("incident_date", { ascending: false });
+        if (searchQ.trim()) q = q.ilike("title", `%${searchQ.trim()}%`);
+        const { data } = await q.limit(20);
+        setLessons((data ?? []) as Lesson[]);
       }
-      setStats([s0, s1, s2]);
+      setLoadingData(false);
     };
 
-    fetchStats();
+    fetchData();
+  }, [activeTab, searchQ, categoryFilter, profile, authLoading, supabase]);
+
+  // Load Global Stats
+  useEffect(() => {
+    if (!profile) return;
+    const loadStats = async () => {
+      const { count: ac } = await supabase.from("knowledge_articles").select("*", { count: "exact", head: true });
+      const { count: ec } = await supabase.from("user_profiles").select("*", { count: "exact", head: true }).eq("is_expert", true);
+      const { count: ic } = await supabase.from("innovation_ideas").select("*", { count: "exact", head: true }).eq("status", "under_review");
+      setStats({ totalArticles: ac || 0, activeExperts: ec || 0, pendingIdeas: ic || 0 });
+    };
+    loadStats();
   }, [profile, supabase]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-xs text-slate-400 font-semibold tracking-widest uppercase">Loading</p>
-        </div>
-      </div>
-    );
-  }
-
-  const roleKey = getRoleKey(profile);
-  const config = roleConfig[roleKey];
-  const initials = `${profile?.first_name?.[0] ?? ""}${profile?.last_name?.[0] ?? ""}`;
+  if (authLoading) return <LoadingScreen />;
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <main className="container mx-auto px-5 py-8 max-w-5xl">
+    <div className="min-h-screen bg-[#F0F2F5] text-slate-900 font-sans">
+      {/* ── Main Layout (Facebook/Telegram Style 3-Column) ── */}
+      <div className="max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-[280px_1fr_320px] gap-6 p-4 md:p-6">
+        
+        {/* ── Left Sidebar (Navigation) ── */}
+        <aside className="hidden lg:flex flex-col gap-4">
+          <Card className="p-4 border-none shadow-sm rounded-xl bg-white">
+            <nav className="space-y-1">
+              {(Object.keys(tabConfig) as Tab[]).map((t) => {
+                const config = tabConfig[t];
+                const Icon = config.icon;
+                const active = activeTab === t;
+                return (
+                  <button
+                    key={t}
+                    onClick={() => { setActiveTab(t); setSearchQ(""); }}
+                    className={cn(
+                      "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold transition-all group",
+                      active ? "bg-amber-50 text-amber-700 shadow-sm" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                    )}
+                  >
+                    <div className={cn("p-1.5 rounded-md", active ? "bg-amber-500 text-white" : "bg-slate-100 text-slate-500 group-hover:bg-slate-200")}>
+                      <Icon className="h-4 w-4" />
+                    </div>
+                    {config.label}
+                  </button>
+                );
+              })}
+            </nav>
+          </Card>
 
-        {/* ── TOP BAR ── */}
-        <div className="flex items-center justify-between mb-10">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-500 flex items-center justify-center text-black font-bold text-sm shrink-0">
-              {initials}
+          <Card className="p-4 border-none shadow-sm rounded-xl bg-white">
+            <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3 px-2">
+              {profile?.role === "admin" ? "Admin Console" : profile?.is_expert ? "Expert Tools" : "Quick Actions"}
+            </h3>
+            <div className="space-y-2">
+              {profile?.role === "admin" && (
+                <>
+                  <button className="w-full flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 rounded-lg transition-all text-left">
+                    <Users className="h-3.5 w-3.5 text-blue-500" /> User Directory
+                  </button>
+                  <button className="w-full flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 rounded-lg transition-all text-left">
+                    <Settings className="h-3.5 w-3.5 text-slate-500" /> System Logs
+                  </button>
+                </>
+              )}
+              
+              {(profile?.is_expert || profile?.role === "admin") && (
+                <button onClick={() => setActiveForm("knowledge")} className="w-full flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 rounded-lg transition-all text-left">
+                  <Plus className="h-3.5 w-3.5 text-amber-500" /> Publish Article
+                </button>
+              )}
+
+              <button onClick={() => setActiveForm("innovation")} className="w-full flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 rounded-lg transition-all text-left">
+                <Lightbulb className="h-3.5 w-3.5 text-violet-500" /> Submit Idea
+              </button>
+              <button onClick={() => setActiveForm("lessons")} className="w-full flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 rounded-lg transition-all text-left">
+                <Shield className="h-3.5 w-3.5 text-rose-500" /> Log AAR
+              </button>
             </div>
-            <div>
-              <div className="font-bold text-slate-900 text-sm">
-                {profile?.first_name} {profile?.last_name}
+          </Card>
+        </aside>
+
+        {/* ── Center Column (Main Feed) ── */}
+        <main className="flex flex-col gap-4">
+          {/* Mobile Header / Tab Switcher */}
+          <div className="lg:hidden flex overflow-x-auto gap-2 pb-2 scrollbar-hide">
+             {(Object.keys(tabConfig) as Tab[]).map((t) => {
+                const config = tabConfig[t];
+                const active = activeTab === t;
+                return (
+                  <button
+                    key={t}
+                    onClick={() => setActiveTab(t)}
+                    className={cn(
+                      "whitespace-nowrap px-4 py-2 rounded-full text-xs font-bold transition-all",
+                      active ? "bg-amber-500 text-white shadow-md" : "bg-white text-slate-600 border border-slate-200"
+                    )}
+                  >
+                    {config.label}
+                  </button>
+                );
+              })}
+          </div>
+
+          {/* Search & Filter Bar */}
+          <Card className="p-4 border-none shadow-sm rounded-xl bg-white flex flex-col md:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="h-4 w-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={searchQ}
+                onChange={(e) => setSearchQ(e.target.value)}
+                placeholder={`Search ${tabConfig[activeTab].label.toLowerCase()}...`}
+                className="w-full h-10 pl-10 pr-4 bg-slate-100 border-none rounded-xl text-sm focus:ring-2 focus:ring-amber-500/20 transition-all outline-none"
+              />
+            </div>
+            {activeTab === "knowledge" && (
+               <select 
+                value={categoryFilter} 
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                className="h-10 px-4 bg-slate-100 border-none rounded-xl text-xs font-bold text-slate-600 outline-none focus:ring-2 focus:ring-amber-500/20"
+              >
+                <option value="all">All Categories</option>
+                <option value="sop">SOPs</option>
+                <option value="best_practice">Best Practice</option>
+                <option value="safety">Safety Alerts</option>
+              </select>
+            )}
+            <button className="h-10 w-10 flex items-center justify-center bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors">
+              <Filter className="h-4 w-4 text-slate-500" />
+            </button>
+          </Card>
+
+          {/* Feed Content */}
+          <div className="space-y-4">
+            {loadingData ? (
+              <div className="flex flex-col items-center justify-center py-20 gap-3">
+                <div className="w-8 h-8 border-3 border-amber-500 border-t-transparent rounded-full animate-spin" />
+                <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Updating Feed</p>
               </div>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wide ${config.badge}`}>
-                  {config.label}
-                </span>
-                {profile?.department_id && (
-                  <span className="text-[11px] text-slate-400 font-medium capitalize">
-                    · {profile.department_id.replace(/_/g, " ")}
-                  </span>
+            ) : (
+              <AnimatePresence mode="popLayout">
+                {activeTab === "pulse" && (
+                  <>
+                    {profile?.role === "admin" ? (
+                      <Card className="p-6 border-none shadow-sm rounded-xl bg-gradient-to-br from-slate-800 to-slate-900 text-white relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform"><Settings className="h-24 w-24" /></div>
+                        <h3 className="text-lg font-black mb-1">System Overview</h3>
+                        <p className="text-xs font-medium text-white/80 max-w-[280px]">Monitoring Ethiopian Airlines KMS performance, user growth, and data security.</p>
+                      </Card>
+                    ) : profile?.is_expert ? (
+                      <Card className="p-6 border-none shadow-sm rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 text-white relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform"><Star className="h-24 w-24" /></div>
+                        <h3 className="text-lg font-black mb-1">Expert Command</h3>
+                        <p className="text-xs font-medium text-white/80 max-w-[280px]">Verify technical articles and mentor junior personnel across the group.</p>
+                      </Card>
+                    ) : (
+                      <Card className="p-6 border-none shadow-sm rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform"><TrendingUp className="h-24 w-24" /></div>
+                        <h3 className="text-lg font-black mb-1">Aviation Command Pulse</h3>
+                        <p className="text-xs font-medium text-white/80 max-w-[280px]">Real-time intelligence from Flight Ops, Engineering, and Innovation streams.</p>
+                      </Card>
+                    )}
+                    
+                    {/* Interleaved items */}
+                    {articles.slice(0, 1).map((a, idx) => (
+                      <FeedCard key={`pulse-article-${a.id || idx}`} idx={idx} type="knowledge" title={a.title} meta={`LATEST ARTICLE · ${a.category.toUpperCase()}`} stats={[{ icon: Eye, value: a.view_count }, { icon: ThumbsUp, value: a.helpful_count }]} onClick={() => setSelectedItem({ type: "knowledge", data: a })} />
+                    ))}
+                    {experts.slice(0, 1).map((e, idx) => (
+                      <FeedCard key={`pulse-expert-${e.id || idx}`} idx={idx} type="experts" title={`${e.first_name} ${e.last_name}`} meta="FEATURED EXPERT" avatar={`${e.first_name[0]}${e.last_name[0]}`} onClick={() => setSelectedItem({ type: "experts", data: e })} />
+                    ))}
+                    {ideas.slice(0, 1).map((i, idx) => (
+                      <FeedCard key={`pulse-idea-${i.id || idx}`} idx={idx} type="innovation" title={i.title} desc={i.description} meta="TRENDING IDEA" stats={[{ icon: TrendingUp, value: i.votes, color: "text-violet-600" }]} onClick={() => setSelectedItem({ type: "innovation", data: i })} />
+                    ))}
+                    {lessons.slice(0, 1).map((l, idx) => (
+                      <FeedCard key={`pulse-lesson-${l.id || idx}`} idx={idx} type="lessons" title={l.title} meta="NEW LESSON LEARNED" desc={l.summary} badge={{ label: l.preventability.replace(/_/g, " "), color: "bg-rose-50 text-rose-700" }} onClick={() => setSelectedItem({ type: "lessons", data: l })} />
+                    ))}
+                  </>
                 )}
-              </div>
-            </div>
+                {activeTab === "knowledge" && articles.map((a, idx) => (
+                  <FeedCard 
+                    key={a.id || `article-${idx}`} 
+                    idx={idx}
+                    type="knowledge"
+                    title={a.title}
+                    meta={`${a.category.toUpperCase()} · ${new Date(a.updated_at).toLocaleDateString()}`}
+                    stats={[
+                      { icon: Eye, value: a.view_count },
+                      { icon: ThumbsUp, value: a.helpful_count }
+                    ]}
+                    onClick={() => setSelectedItem({ type: "knowledge", data: a })}
+                  />
+                ))}
+                {activeTab === "experts" && experts.map((e, idx) => (
+                  <FeedCard 
+                    key={e.id || `expert-${idx}`} 
+                    idx={idx}
+                    type="experts"
+                    title={`${e.first_name} ${e.last_name}`}
+                    meta={`${e.department_id.replace(/_/g, " ")} · ${e.seniority_level || 5}+ yrs exp`}
+                    tags={e.expertise_tags}
+                    avatar={`${e.first_name?.[0]}${e.last_name?.[0]}`}
+                    onClick={() => setSelectedItem({ type: "experts", data: e })}
+                  />
+                ))}
+                {activeTab === "innovation" && ideas.map((i, idx) => (
+                  <FeedCard 
+                    key={i.id || `idea-${idx}`} 
+                    idx={idx}
+                    type="innovation"
+                    title={i.title}
+                    desc={i.description}
+                    meta={`${i.department.replace(/_/g, " ")} · ${i.status.replace(/_/g, " ")}`}
+                    stats={[
+                      { icon: TrendingUp, value: i.votes, color: "text-violet-600" }
+                    ]}
+                    onClick={() => setSelectedItem({ type: "innovation", data: i })}
+                  />
+                ))}
+                {activeTab === "lessons" && lessons.map((l, idx) => (
+                  <FeedCard 
+                    key={l.id || `lesson-${idx}`} 
+                    idx={idx}
+                    type="lessons"
+                    title={l.title}
+                    meta={`${l.department.replace(/_/g, " ")} · ${l.aircraft_type || "All Fleet"}`}
+                    desc={l.summary}
+                    badge={{ label: l.preventability.replace(/_/g, " "), color: "bg-rose-50 text-rose-700" }}
+                    onClick={() => setSelectedItem({ type: "lessons", data: l })}
+                  />
+                ))}
+                {!loadingData && (
+                  activeTab === "pulse" 
+                    ? (articles.length === 0 && experts.length === 0 && ideas.length === 0 && lessons.length === 0)
+                    : (activeTab === "knowledge" ? articles : activeTab === "experts" ? experts : activeTab === "innovation" ? ideas : lessons).length === 0
+                ) && (
+                  <EmptyState tab={activeTab} />
+                )}
+              </AnimatePresence>
+            )}
           </div>
-          <Button
-            variant="outline"
-            onClick={logout}
-            className="gap-2 text-xs font-semibold text-slate-500 hover:text-slate-900 h-8"
-          >
-            <LogOut className="h-3.5 w-3.5" />
-            Sign out
-          </Button>
-        </div>
+        </main>
 
-        {/* ── WELCOME ── */}
-        <div className="mb-8">
-          <p className="text-xs font-bold text-amber-600 tracking-widest uppercase mb-1">{config.greeting}</p>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
-            {profile?.first_name ?? "User"}
-          </h1>
-          <p className="text-slate-400 text-sm mt-1 font-normal">{config.subtitle}</p>
-        </div>
-
-        {/* ── STATS ── */}
-        <div className="grid grid-cols-3 gap-4 mb-10">
-          {config.statsLabels.map((label, i) => (
-            <div key={label} className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
-              <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">{label}</div>
-              <div className="text-3xl font-bold text-slate-900">{stats[i]}</div>
+        {/* ── Right Sidebar (Stats & Trending) ── */}
+        <aside className="hidden xl:flex flex-col gap-6">
+          <Card className="p-5 border-none shadow-sm rounded-xl bg-white">
+            <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-amber-500" />
+              Portal Insights
+            </h3>
+            <div className="space-y-4">
+              <StatRow label="Global Knowledge" value={stats.totalArticles} icon={BookOpen} color="bg-amber-100 text-amber-600" />
+              <StatRow label="Certified Experts" value={stats.activeExperts} icon={Users} color="bg-blue-100 text-blue-600" />
+              <StatRow label="Active Ideas" value={stats.pendingIdeas} icon={Lightbulb} color="bg-violet-100 text-violet-600" />
             </div>
-          ))}
-        </div>
+            <button className="w-full mt-6 py-2.5 rounded-lg border border-slate-100 text-[11px] font-bold text-slate-500 hover:bg-slate-50 transition-colors uppercase tracking-wider">
+              View Detailed Analytics
+            </button>
+          </Card>
 
-        {/* ── ROLE-SPECIFIC ACTIONS ── */}
-        <div className="mb-3">
-          <h2 className="text-xs font-bold text-slate-400 tracking-widest uppercase">
-            {roleKey === "admin" ? "Management Tools" : roleKey === "expert" ? "Contribute" : "Quick Access"}
-          </h2>
-        </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
-          {config.actions.map(({ href, icon: Icon, label, desc, color }) => (
-            <Link key={href + label} href={href} className="group block">
-              <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
-                <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-4 ${color}`}>
-                  <Icon className="h-4 w-4" />
+          <Card className="p-5 border-none shadow-sm rounded-xl bg-white overflow-hidden relative">
+            <div className="absolute top-0 right-0 p-4 opacity-10">
+              <Plane className="h-20 w-20 rotate-45" />
+            </div>
+            <h3 className="font-bold text-slate-900 mb-4">Upcoming Safety Briefings</h3>
+            <div className="space-y-3 relative z-10">
+              {[
+                { title: "B787 Battery SOP Update", time: "Tomorrow, 10:00 AM", category: "Technical" },
+                { title: "Ground Ops Safety Review", time: "Friday, 02:00 PM", category: "Safety" },
+              ].map((brief, i) => (
+                <div key={i} className="p-3 rounded-lg bg-slate-50 border border-slate-100 hover:border-amber-200 transition-all cursor-pointer">
+                  <div className="text-[10px] font-bold text-amber-600 uppercase mb-1">{brief.category}</div>
+                  <div className="text-xs font-bold text-slate-800 mb-1">{brief.title}</div>
+                  <div className="flex items-center gap-1 text-[10px] text-slate-400">
+                    <Clock className="h-3 w-3" /> {brief.time}
+                  </div>
                 </div>
-                <div className="font-bold text-slate-900 text-sm mb-1">{label}</div>
-                <div className="text-xs text-slate-400 font-normal leading-relaxed">{desc}</div>
-                <div className="mt-4 flex items-center gap-1 text-xs font-semibold text-slate-400 group-hover:text-amber-600 transition-colors">
-                  Open <ArrowRight className="h-3 w-3" />
-                </div>
+              ))}
+            </div>
+          </Card>
+
+          <div className="px-4 text-[11px] text-slate-400 font-medium leading-relaxed">
+            &copy; 2026 Ethiopian Airlines Group.<br />
+            Knowledge Management System v2.4.0-SPA
+          </div>
+        </aside>
+      </div>
+
+      {/* ── Inline Detail Overlay (Slide-over) ── */}
+      <AnimatePresence>
+        {selectedItem && (
+          <DetailOverlay 
+            item={selectedItem} 
+            onClose={() => setSelectedItem(null)} 
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ── Inline Creation Modal ── */}
+      <AnimatePresence>
+        {activeForm && (
+          <FormOverlay 
+            type={activeForm} 
+            onClose={() => setActiveForm(null)} 
+          />
+        )}
+      </AnimatePresence>
+
+    </div>
+  );
+}
+
+// ── Sub-Components ─────────────────────────────────────────────────────────
+
+function FeedCard({ idx, type, title, desc, meta, stats, tags, avatar, badge, onClick }: any) {
+  const config = tabConfig[type as Tab];
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: idx * 0.05 }}
+      onClick={onClick}
+      className="group bg-white rounded-xl shadow-sm border border-transparent hover:border-amber-200 hover:shadow-md transition-all cursor-pointer overflow-hidden"
+    >
+      <div className="p-5">
+        <div className="flex items-start justify-between gap-4 mb-3">
+          <div className="flex items-center gap-3">
+            {avatar ? (
+              <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-700 font-bold text-sm border border-slate-200">
+                {avatar}
               </div>
-            </Link>
-          ))}
+            ) : (
+              (() => {
+                const Icon = config.icon;
+                return (
+                  <div className={cn("p-2 rounded-lg", config.bg, config.color)}>
+                    <Icon className="h-5 w-5" />
+                  </div>
+                );
+              })()
+            )}
+            <div>
+              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{meta}</div>
+              <h3 className="font-bold text-slate-900 group-hover:text-amber-600 transition-colors line-clamp-1">{title}</h3>
+            </div>
+          </div>
+          {badge && <Badge className={cn("text-[10px] px-2 py-0.5", badge.color)}>{badge.label}</Badge>}
+        </div>
+        
+        {desc && <p className="text-sm text-slate-500 line-clamp-2 mb-4 leading-relaxed">{desc}</p>}
+        
+        {tags && (
+          <div className="flex flex-wrap gap-1.5 mb-4">
+            {tags.slice(0, 3).map((t: string) => (
+              <span key={t} className="px-2 py-0.5 bg-slate-50 text-slate-500 rounded text-[10px] font-bold border border-slate-100">#{t}</span>
+            ))}
+          </div>
+        )}
+
+        <div className="flex items-center justify-between pt-4 border-t border-slate-50">
+          <div className="flex items-center gap-4">
+            {stats?.map((s: any, i: number) => {
+              const Icon = s.icon;
+              return (
+                <div key={i} className="flex items-center gap-1.5 text-slate-400">
+                  <Icon className={cn("h-3.5 w-3.5", s.color)} />
+                  <span className="text-[11px] font-bold">{s.value}</span>
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex items-center gap-1 text-[11px] font-bold text-amber-600 opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0">
+            View Details <ChevronRight className="h-3 w-3" />
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+function StatRow({ label, value, icon: Icon, color }: any) {
+  return (
+    <div className="flex items-center gap-3">
+      <div className={cn("p-2 rounded-lg", color)}>
+        <Icon className="h-4 w-4" />
+      </div>
+      <div className="flex-1">
+        <div className="text-xs font-bold text-slate-800">{value}</div>
+        <div className="text-[10px] text-slate-400 font-medium">{label}</div>
+      </div>
+    </div>
+  );
+}
+
+function LoadingScreen() {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-white gap-4">
+      <motion.div 
+        animate={{ rotate: 360 }} 
+        transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+        className="w-12 h-12 rounded-xl bg-amber-500 flex items-center justify-center shadow-lg shadow-amber-500/30"
+      >
+        <Plane className="h-6 w-6 text-black" />
+      </motion.div>
+      <div className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] animate-pulse">Initializing Aviation Command</div>
+    </div>
+  );
+}
+
+function EmptyState({ tab }: { tab: Tab }) {
+  const Icon = tabConfig[tab].icon;
+  return (
+    <Card className="p-12 border-2 border-dashed border-slate-200 bg-white/50 text-center rounded-xl">
+      <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+        <Icon className="h-8 w-8 text-slate-300" />
+      </div>
+      <h3 className="font-bold text-slate-900 mb-1">No items found</h3>
+      <p className="text-sm text-slate-400 max-w-[240px] mx-auto">Try adjusting your search or check back later for updates.</p>
+    </Card>
+  );
+}
+
+function DetailOverlay({ item, onClose }: { item: SelectedItem; onClose: () => void }) {
+  if (!item) return null;
+  const config = tabConfig[item.type as Tab];
+
+  return (
+    <div className="fixed inset-0 z-[100] flex justify-end">
+      <motion.div 
+        initial={{ opacity: 0 }} 
+        animate={{ opacity: 1 }} 
+        exit={{ opacity: 0 }} 
+        onClick={onClose}
+        className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" 
+      />
+      <motion.div 
+        initial={{ x: "100%" }} 
+        animate={{ x: 0 }} 
+        exit={{ x: "100%" }} 
+        transition={{ type: "spring", damping: 25, stiffness: 200 }}
+        className="relative w-full max-w-2xl h-full bg-white shadow-2xl flex flex-col"
+      >
+        <div className="flex items-center justify-between p-6 border-b border-slate-100">
+          <div className="flex items-center gap-3">
+            {(() => {
+              const Icon = config.icon;
+              return (
+                <div className={cn("p-2 rounded-lg", config.bg, config.color)}>
+                  <Icon className="h-5 w-5" />
+                </div>
+              );
+            })()}
+            <div>
+              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{config.label}</div>
+              <h2 className="text-lg font-bold text-slate-900 truncate max-w-[400px]">
+                {item.type === "experts" ? `${item.data.first_name} ${item.data.last_name}` : item.data.title || item.data.summary}
+              </h2>
+            </div>
+          </div>
+          <button onClick={onClose} className="w-10 h-10 rounded-full hover:bg-slate-100 flex items-center justify-center transition-colors">
+            <X className="h-5 w-5 text-slate-400" />
+          </button>
         </div>
 
-        {/* ── ROLE-SPECIFIC BOTTOM BANNER ── */}
-        {roleKey === "admin" && (
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
-                <Settings className="h-5 w-5 text-slate-500" />
+        <div className="flex-1 overflow-y-auto p-8">
+          {item.type === "knowledge" && (
+            <div className="space-y-6">
+              <div className="flex items-center gap-4 text-xs text-slate-500 font-medium">
+                <div className="flex items-center gap-1.5"><Calendar className="h-4 w-4" /> Updated {new Date(item.data.updated_at).toLocaleDateString()}</div>
+                <div className="flex items-center gap-1.5"><Target className="h-4 w-4" /> Language: {item.data.language?.toUpperCase()}</div>
               </div>
-              <div>
-                <div className="font-bold text-slate-900 text-sm">System Administration</div>
-                <div className="text-xs text-slate-400 mt-0.5">Manage users, departments, and system settings.</div>
-              </div>
-            </div>
-            <Link href="/knowledge/new">
-              <Button className="bg-slate-900 hover:bg-amber-500 hover:text-black text-white text-xs font-bold h-9 px-5 rounded-xl shrink-0 gap-1.5 transition-all">
-                <Plus className="h-3.5 w-3.5" /> Add Content
-              </Button>
-            </Link>
-          </div>
-        )}
-
-        {roleKey === "expert" && (
-          <div className="bg-amber-50 rounded-2xl border border-amber-100 shadow-sm p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
-                <Star className="h-5 w-5 text-amber-600" />
-              </div>
-              <div>
-                <div className="font-bold text-slate-900 text-sm">You're a recognized expert</div>
-                <div className="text-xs text-slate-500 mt-0.5">Your knowledge contributions help the entire organization.</div>
+              <article className="prose prose-slate max-w-none prose-sm">
+                <div dangerouslySetInnerHTML={{ __html: item.data.content || "<p class='text-slate-400 italic'>No content available for this article summary.</p>" }} />
+              </article>
+              <div className="pt-8 border-t border-slate-100 flex items-center justify-between">
+                <div className="text-sm font-bold text-slate-900">Was this helpful?</div>
+                <div className="flex gap-2">
+                  <button className="px-4 py-2 rounded-lg border border-slate-200 text-xs font-bold hover:bg-slate-50 transition-all flex items-center gap-2"><ThumbsUp className="h-4 w-4 text-amber-500" /> Yes</button>
+                  <button className="px-4 py-2 rounded-lg border border-slate-200 text-xs font-bold hover:bg-slate-50 transition-all">No</button>
+                </div>
               </div>
             </div>
-            <Link href="/knowledge/new">
-              <Button className="bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold h-9 px-5 rounded-xl shrink-0 gap-1.5">
-                <Plus className="h-3.5 w-3.5" /> Share Knowledge
-              </Button>
-            </Link>
-          </div>
-        )}
+          )}
 
-        {roleKey === "staff" && (
-          <div className="bg-white rounded-2xl border border-rose-100 shadow-sm p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center shrink-0">
-                <Shield className="h-5 w-5 text-rose-500" />
+          {item.type === "experts" && (
+            <div className="space-y-8">
+              <div className="flex items-center gap-6 p-6 rounded-2xl bg-slate-50 border border-slate-100">
+                <div className="w-24 h-24 rounded-full bg-amber-500 flex items-center justify-center text-white font-bold text-3xl border-4 border-white shadow-xl shrink-0">
+                  {item.data.first_name[0]}{item.data.last_name[0]}
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold text-slate-900 mb-1">{item.data.first_name} {item.data.last_name}</h3>
+                  <div className="text-sm font-bold text-amber-600 mb-2 uppercase tracking-wide">{item.data.department_id.replace(/_/g, " ")}</div>
+                  <div className="flex items-center gap-3 text-sm text-slate-500">
+                    <div className="flex items-center gap-1"><Star className="h-4 w-4 text-amber-400 fill-amber-400" /> {item.data.seniority_level || 5}+ yrs Exp</div>
+                    <div className="flex items-center gap-1"><MapPin className="h-4 w-4" /> Addis Ababa (HQ)</div>
+                  </div>
+                </div>
               </div>
-              <div>
-                <div className="font-bold text-slate-900 text-sm">After-Action Reviews</div>
-                <div className="text-xs text-slate-400 mt-0.5">Searchable incident reports and operational lessons.</div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-5 rounded-xl border border-slate-100 space-y-3">
+                  <h4 className="text-xs font-bold text-slate-400 uppercase">Expertise Areas</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {item.data.expertise_tags?.map((t: string) => <Badge key={t} variant="secondary" className="bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors">{t}</Badge>)}
+                  </div>
+                </div>
+                <div className="p-5 rounded-xl border border-slate-100 space-y-3">
+                  <h4 className="text-xs font-bold text-slate-400 uppercase">Contact Information</h4>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm text-slate-600 font-medium"><Mail className="h-4 w-4 text-slate-400" /> {item.data.email}</div>
+                    <div className="flex items-center gap-2 text-sm text-slate-600 font-medium"><MessageSquare className="h-4 w-4 text-slate-400" /> Available for Chat</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h4 className="text-sm font-bold text-slate-900">Professional Bio</h4>
+                <p className="text-sm text-slate-600 leading-relaxed">
+                  {item.data.bio || "Subject Matter Expert with extensive experience in Ethiopian Airlines operations. Specializes in providing high-level technical guidance and mentoring across departments."}
+                </p>
+              </div>
+
+              <button className="w-full py-4 bg-amber-500 hover:bg-amber-400 text-black font-bold rounded-xl shadow-lg shadow-amber-500/20 transition-all flex items-center justify-center gap-2">
+                <Mail className="h-5 w-5" /> Schedule Consultation
+              </button>
+            </div>
+          )}
+
+          {item.type === "innovation" && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between p-4 rounded-xl bg-violet-50 border border-violet-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-violet-500 flex items-center justify-center text-white"><TrendingUp className="h-5 w-5" /></div>
+                  <div>
+                    <div className="text-[10px] font-bold text-violet-600 uppercase">Current Standing</div>
+                    <div className="text-lg font-bold text-violet-900">{item.data.votes} Votes Received</div>
+                  </div>
+                </div>
+                <Badge className={cn("px-3 py-1 font-bold", item.data.estimated_impact === "high" ? "bg-rose-500" : "bg-blue-500")}>{item.data.estimated_impact.toUpperCase()} IMPACT</Badge>
+              </div>
+              <div className="space-y-4">
+                <h4 className="text-sm font-bold text-slate-900">Idea Proposal</h4>
+                <p className="text-sm text-slate-600 leading-relaxed bg-slate-50 p-5 rounded-xl border border-slate-100 italic">"{item.data.description}"</p>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 border border-slate-100 rounded-xl">
+                  <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">Status</div>
+                  <div className="text-sm font-bold text-slate-800 capitalize">{item.data.status.replace(/_/g, " ")}</div>
+                </div>
+                <div className="p-4 border border-slate-100 rounded-xl">
+                  <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">Department</div>
+                  <div className="text-sm font-bold text-slate-800 capitalize">{item.data.department.replace(/_/g, " ")}</div>
+                </div>
+              </div>
+              <div className="pt-6 border-t border-slate-100">
+                <button className="w-full py-3 bg-violet-600 hover:bg-violet-700 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2">
+                  <TrendingUp className="h-4 w-4" /> Upvote this Idea
+                </button>
               </div>
             </div>
-            <Link href="/lessons-learned">
-              <Button className="bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold h-9 px-5 rounded-xl shrink-0 gap-1.5">
-                View AAR Database <ArrowRight className="h-3.5 w-3.5" />
-              </Button>
-            </Link>
-          </div>
-        )}
+          )}
 
-      </main>
+          {item.type === "lessons" && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between p-4 rounded-xl bg-rose-50 border border-rose-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-rose-600 flex items-center justify-center text-white"><Shield className="h-5 w-5" /></div>
+                  <div>
+                    <div className="text-[10px] font-bold text-rose-600 uppercase tracking-widest">Post-Operational Review</div>
+                    <div className="text-lg font-bold text-rose-900">{new Date(item.data.incident_date).toLocaleDateString("en-US", { month: "long", year: "numeric" })}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <div>
+                  <h4 className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2"><Info className="h-4 w-4 text-amber-500" /> Situation Summary</h4>
+                  <p className="text-sm text-slate-600 leading-relaxed">{item.data.summary}</p>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="p-5 rounded-2xl bg-rose-50/50 border border-rose-100">
+                    <h5 className="text-xs font-bold text-rose-700 mb-3 flex items-center gap-2"><AlertTriangle className="h-4 w-4" /> Root Cause</h5>
+                    <p className="text-sm text-slate-700 leading-relaxed font-medium">{item.data.root_cause}</p>
+                  </div>
+                  <div className="p-5 rounded-2xl bg-emerald-50 border border-emerald-100">
+                    <h5 className="text-xs font-bold text-emerald-700 mb-3 flex items-center gap-2"><CheckCircle2 className="h-4 w-4" /> Corrective Action</h5>
+                    <p className="text-sm text-slate-700 leading-relaxed font-medium">{item.data.corrective_action}</p>
+                  </div>
+                </div>
+
+                <div className="p-4 border border-slate-100 rounded-xl">
+                  <div className="text-[10px] font-bold text-slate-400 uppercase mb-2">Technical Context</div>
+                  <div className="flex flex-wrap gap-4">
+                    <div className="text-xs font-bold text-slate-700">Fleet: <span className="text-slate-500 font-medium ml-1">{item.data.aircraft_type || "N/A"}</span></div>
+                    <div className="text-xs font-bold text-slate-700">Department: <span className="text-slate-500 font-medium ml-1 capitalize">{item.data.department.replace(/_/g, " ")}</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="p-6 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
+          <div className="text-xs text-slate-400 font-bold uppercase tracking-widest flex items-center gap-2">
+            <Shield className="h-3.5 w-3.5" /> Internal Secure Document
+          </div>
+          <button className="flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-slate-900 transition-colors">
+            Share <ExternalLink className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+function FormOverlay({ type, onClose }: { type: Tab; onClose: () => void }) {
+  const config = tabConfig[type];
+
+  return (
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+      <motion.div 
+        initial={{ opacity: 0 }} 
+        animate={{ opacity: 1 }} 
+        exit={{ opacity: 0 }} 
+        onClick={onClose}
+        className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" 
+      />
+      <motion.div 
+        initial={{ scale: 0.95, opacity: 0 }} 
+        animate={{ scale: 1, opacity: 1 }} 
+        exit={{ scale: 0.95, opacity: 0 }} 
+        className="relative w-full max-w-xl bg-white rounded-3xl shadow-2xl overflow-hidden"
+      >
+        <div className={cn("p-8 text-center relative overflow-hidden", config.bg)}>
+          {(() => {
+            const Icon = config.icon;
+            return (
+              <>
+                <div className="absolute top-0 right-0 p-4 opacity-5"><Icon className="h-32 w-32" /></div>
+                <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg", config.bg, config.color)}>
+                  <Icon className="h-8 w-8" />
+                </div>
+              </>
+            );
+          })()}
+          <h2 className="text-2xl font-bold text-slate-900">New {config.label.replace("Base", "").replace("Hub", "").replace("Locator", "")} Submission</h2>
+          <p className="text-sm text-slate-500 mt-2">Contributing to Ethiopian Airlines Group Knowledge Excellence</p>
+        </div>
+
+        <div className="p-8 space-y-6">
+           <div className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Title / Brief Description</label>
+                <input 
+                  type="text" 
+                  placeholder="Summarize your contribution..."
+                  className="w-full h-12 px-4 bg-slate-100 border-none rounded-xl text-sm font-medium focus:ring-2 focus:ring-amber-500/20 outline-none transition-all" 
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Full Content / Details</label>
+                <textarea 
+                  rows={4} 
+                  placeholder="Provide comprehensive details here..."
+                  className="w-full p-4 bg-slate-100 border-none rounded-xl text-sm font-medium focus:ring-2 focus:ring-amber-500/20 outline-none transition-all resize-none"
+                />
+              </div>
+           </div>
+
+           <div className="flex gap-4 pt-4">
+             <button onClick={onClose} className="flex-1 py-3.5 text-sm font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition-all text-center">Cancel</button>
+             <button className={cn("flex-1 py-3.5 text-sm font-bold text-white rounded-xl shadow-lg transition-all text-center", type === "knowledge" ? "bg-amber-500 text-black shadow-amber-500/20" : type === "experts" ? "bg-blue-600 shadow-blue-500/20" : type === "innovation" ? "bg-violet-600 shadow-violet-500/20" : "bg-rose-600 shadow-rose-500/20")}>
+               Submit Contribution
+             </button>
+           </div>
+        </div>
+      </motion.div>
     </div>
   );
 }
