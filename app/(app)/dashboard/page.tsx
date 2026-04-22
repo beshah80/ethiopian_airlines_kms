@@ -20,11 +20,11 @@ import {
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type Article = { id: string; title: string; category: string; updated_at: string; helpful_count: number; view_count: number; language: string; content?: string; author_id?: string; author_name?: string; };
-type Expert = { id: string; first_name: string; last_name: string; department_id: string; expertise_tags?: string[]; seniority_level?: number; email: string; bio?: string; };
+type Expert = { id: string; first_name: string; last_name: string; department_id: string; expertise_tags?: string[]; seniority_level?: number; email: string; bio?: string; role: string; };
 type Idea = { id: string; title: string; description: string; department: string; estimated_impact: string; status: string; votes: number; created_at: string; submitted_by_name?: string; };
 type Lesson = { id: string; title: string; incident_date: string; department: string; aircraft_type: string | null; summary: string; root_cause: string; corrective_action: string; preventability: string; created_at: string; };
 
-type Tab = "pulse" | "knowledge" | "experts" | "lessons" | "innovation";
+type Tab = "pulse" | "knowledge" | "experts" | "lessons" | "innovation" | "directory";
 type SelectedItem = { type: string; data: any } | null;
 type ActiveForm = Tab | null;
 
@@ -35,6 +35,7 @@ const tabConfig: Record<Tab, { label: string; icon: any; color: string; bg: stri
   experts: { label: "Expert Locator", icon: Users, color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-200" },
   lessons: { label: "Lessons Learned", icon: Shield, color: "text-rose-600", bg: "bg-rose-50", border: "border-rose-200" },
   innovation: { label: "Innovation Hub", icon: Lightbulb, color: "text-violet-600", bg: "bg-violet-50", border: "border-violet-200" },
+  directory: { label: "User Directory", icon: Users, color: "text-slate-600", bg: "bg-slate-50", border: "border-slate-200" },
 };
 
 // ── Main Component ─────────────────────────────────────────────────────────
@@ -49,12 +50,16 @@ export default function DashboardPage() {
   const [experts, setExperts] = useState<Expert[]>([]);
   const [ideas, setIdeas] = useState<Idea[]>([]);
   const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [allUsers, setAllUsers] = useState<Expert[]>([]);
   
   // UI states
   const [searchQ, setSearchQ] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [loadingData, setLoadingData] = useState(false);
   const [stats, setStats] = useState({ totalArticles: 0, activeExperts: 0, pendingIdeas: 0 });
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const handleRefresh = () => setRefreshKey(prev => prev + 1);
 
   // Load Feed Data
   useEffect(() => {
@@ -98,12 +103,20 @@ export default function DashboardPage() {
         if (searchQ.trim()) q = q.ilike("title", `%${searchQ.trim()}%`);
         const { data } = await q.limit(20);
         setLessons((data ?? []) as Lesson[]);
+      } else if (activeTab === "directory") {
+        let q = supabase.from("user_profiles").select("*").order("first_name", { ascending: true });
+        if (searchQ.trim()) {
+          const lq = searchQ.toLowerCase();
+          q = q.or(`first_name.ilike.%${lq}%,last_name.ilike.%${lq}%,email.ilike.%${lq}%`);
+        }
+        const { data } = await q.limit(50);
+        setAllUsers((data ?? []) as Expert[]);
       }
       setLoadingData(false);
     };
 
     fetchData();
-  }, [activeTab, searchQ, categoryFilter, profile, authLoading, supabase]);
+  }, [activeTab, searchQ, categoryFilter, profile, authLoading, supabase, refreshKey]);
 
   // Load Global Stats
   useEffect(() => {
@@ -115,7 +128,25 @@ export default function DashboardPage() {
       setStats({ totalArticles: ac || 0, activeExperts: ec || 0, pendingIdeas: ic || 0 });
     };
     loadStats();
-  }, [profile, supabase]);
+  }, [profile, supabase, refreshKey]);
+
+  const handleVote = async (ideaId: string, currentVotes: number) => {
+    const { error } = await supabase
+      .from("innovation_ideas")
+      .update({ votes: currentVotes + 1 })
+      .eq("id", ideaId);
+    
+    if (!error) handleRefresh();
+  };
+
+  const handleHelpful = async (articleId: string, currentCount: number) => {
+    const { error } = await supabase
+      .from("knowledge_articles")
+      .update({ helpful_count: currentCount + 1 })
+      .eq("id", articleId);
+    
+    if (!error) handleRefresh();
+  };
 
   if (authLoading) return <LoadingScreen />;
 
@@ -158,7 +189,13 @@ export default function DashboardPage() {
             <div className="space-y-2">
               {profile?.role === "admin" && (
                 <>
-                  <button className="w-full flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 rounded-lg transition-all text-left">
+                  <button 
+                    onClick={() => setActiveTab("directory")}
+                    className={cn(
+                      "w-full flex items-center gap-2 px-3 py-2 text-xs font-bold rounded-lg transition-all text-left",
+                      activeTab === "directory" ? "bg-amber-50 text-amber-700" : "text-slate-700 hover:bg-slate-50"
+                    )}
+                  >
                     <Users className="h-3.5 w-3.5 text-blue-500" /> User Directory
                   </button>
                   <button className="w-full flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 rounded-lg transition-all text-left">
@@ -244,7 +281,7 @@ export default function DashboardPage() {
             ) : (
               <AnimatePresence mode="popLayout">
                 {activeTab === "pulse" && (
-                  <>
+                  <motion.div key="pulse-content" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-4">
                     {profile?.role === "admin" ? (
                       <Card className="p-6 border-none shadow-sm rounded-xl bg-gradient-to-br from-slate-800 to-slate-900 text-white relative overflow-hidden group">
                         <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform"><Settings className="h-24 w-24" /></div>
@@ -278,64 +315,96 @@ export default function DashboardPage() {
                     {lessons.slice(0, 1).map((l, idx) => (
                       <FeedCard key={`pulse-lesson-${l.id || idx}`} idx={idx} type="lessons" title={l.title} meta="NEW LESSON LEARNED" desc={l.summary} badge={{ label: l.preventability.replace(/_/g, " "), color: "bg-rose-50 text-rose-700" }} onClick={() => setSelectedItem({ type: "lessons", data: l })} />
                     ))}
-                  </>
+                  </motion.div>
                 )}
-                {activeTab === "knowledge" && articles.map((a, idx) => (
-                  <FeedCard 
-                    key={a.id || `article-${idx}`} 
-                    idx={idx}
-                    type="knowledge"
-                    title={a.title}
-                    meta={`${a.category.toUpperCase()} · ${new Date(a.updated_at).toLocaleDateString()}`}
-                    stats={[
-                      { icon: Eye, value: a.view_count },
-                      { icon: ThumbsUp, value: a.helpful_count }
-                    ]}
-                    onClick={() => setSelectedItem({ type: "knowledge", data: a })}
-                  />
-                ))}
-                {activeTab === "experts" && experts.map((e, idx) => (
-                  <FeedCard 
-                    key={e.id || `expert-${idx}`} 
-                    idx={idx}
-                    type="experts"
-                    title={`${e.first_name} ${e.last_name}`}
-                    meta={`${e.department_id.replace(/_/g, " ")} · ${e.seniority_level || 5}+ yrs exp`}
-                    tags={e.expertise_tags}
-                    avatar={`${e.first_name?.[0]}${e.last_name?.[0]}`}
-                    onClick={() => setSelectedItem({ type: "experts", data: e })}
-                  />
-                ))}
-                {activeTab === "innovation" && ideas.map((i, idx) => (
-                  <FeedCard 
-                    key={i.id || `idea-${idx}`} 
-                    idx={idx}
-                    type="innovation"
-                    title={i.title}
-                    desc={i.description}
-                    meta={`${i.department.replace(/_/g, " ")} · ${i.status.replace(/_/g, " ")}`}
-                    stats={[
-                      { icon: TrendingUp, value: i.votes, color: "text-violet-600" }
-                    ]}
-                    onClick={() => setSelectedItem({ type: "innovation", data: i })}
-                  />
-                ))}
-                {activeTab === "lessons" && lessons.map((l, idx) => (
-                  <FeedCard 
-                    key={l.id || `lesson-${idx}`} 
-                    idx={idx}
-                    type="lessons"
-                    title={l.title}
-                    meta={`${l.department.replace(/_/g, " ")} · ${l.aircraft_type || "All Fleet"}`}
-                    desc={l.summary}
-                    badge={{ label: l.preventability.replace(/_/g, " "), color: "bg-rose-50 text-rose-700" }}
-                    onClick={() => setSelectedItem({ type: "lessons", data: l })}
-                  />
-                ))}
+                {activeTab === "knowledge" && (
+                  <motion.div key="knowledge-content" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
+                    {articles.map((a, idx) => (
+                      <FeedCard 
+                        key={a.id || `article-${idx}`} 
+                        idx={idx}
+                        type="knowledge"
+                        title={a.title}
+                        meta={`${a.category.toUpperCase()} · ${new Date(a.updated_at).toLocaleDateString()}`}
+                        stats={[
+                          { icon: Eye, value: a.view_count },
+                          { icon: ThumbsUp, value: a.helpful_count }
+                        ]}
+                        onClick={() => setSelectedItem({ type: "knowledge", data: a })}
+                      />
+                    ))}
+                  </motion.div>
+                )}
+                {activeTab === "experts" && (
+                  <motion.div key="experts-content" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
+                    {experts.map((e, idx) => (
+                      <FeedCard 
+                        key={e.id || `expert-${idx}`} 
+                        idx={idx}
+                        type="experts"
+                        title={`${e.first_name} ${e.last_name}`}
+                        meta={`${e.department_id.replace(/_/g, " ")} · ${e.seniority_level || 5}+ yrs exp`}
+                        tags={e.expertise_tags}
+                        avatar={`${e.first_name?.[0]}${e.last_name?.[0]}`}
+                        onClick={() => setSelectedItem({ type: "experts", data: e })}
+                      />
+                    ))}
+                  </motion.div>
+                )}
+                {activeTab === "innovation" && (
+                  <motion.div key="innovation-content" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
+                    {ideas.map((i, idx) => (
+                      <FeedCard 
+                        key={i.id || `idea-${idx}`} 
+                        idx={idx}
+                        type="innovation"
+                        title={i.title}
+                        desc={i.description}
+                        meta={`${i.department.replace(/_/g, " ")} · ${i.status.replace(/_/g, " ")}`}
+                        stats={[
+                          { icon: TrendingUp, value: i.votes, color: "text-violet-600" }
+                        ]}
+                        onClick={() => setSelectedItem({ type: "innovation", data: i })}
+                      />
+                    ))}
+                  </motion.div>
+                )}
+                {activeTab === "lessons" && (
+                  <motion.div key="lessons-content" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
+                    {lessons.map((l, idx) => (
+                      <FeedCard 
+                        key={l.id || `lesson-${idx}`} 
+                        idx={idx}
+                        type="lessons"
+                        title={l.title}
+                        meta={`${l.department.replace(/_/g, " ")} · ${l.aircraft_type || "All Fleet"}`}
+                        desc={l.summary}
+                        badge={{ label: l.preventability.replace(/_/g, " "), color: "bg-rose-50 text-rose-700" }}
+                        onClick={() => setSelectedItem({ type: "lessons", data: l })}
+                      />
+                    ))}
+                  </motion.div>
+                )}
+                {activeTab === "directory" && (
+                  <motion.div key="directory-content" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
+                    {allUsers.map((u, idx) => (
+                      <FeedCard 
+                        key={u.id || `user-${idx}`} 
+                        idx={idx}
+                        type="experts"
+                        title={`${u.first_name} ${u.last_name}`}
+                        meta={`${u.department_id.replace(/_/g, " ")} · ${u.email}`}
+                        desc={u.bio || "Staff Member"}
+                        badge={{ label: u.role.toUpperCase(), color: "bg-slate-100 text-slate-700" }}
+                        onClick={() => setSelectedItem({ type: "experts", data: u })}
+                      />
+                    ))}
+                  </motion.div>
+                )}
                 {!loadingData && (
                   activeTab === "pulse" 
                     ? (articles.length === 0 && experts.length === 0 && ideas.length === 0 && lessons.length === 0)
-                    : (activeTab === "knowledge" ? articles : activeTab === "experts" ? experts : activeTab === "innovation" ? ideas : lessons).length === 0
+                    : (activeTab === "knowledge" ? articles : activeTab === "experts" ? experts : activeTab === "innovation" ? ideas : activeTab === "lessons" ? lessons : allUsers).length === 0
                 ) && (
                   <EmptyState tab={activeTab} />
                 )}
@@ -395,6 +464,8 @@ export default function DashboardPage() {
           <DetailOverlay 
             item={selectedItem} 
             onClose={() => setSelectedItem(null)} 
+            onVote={handleVote}
+            onHelpful={handleHelpful}
           />
         )}
       </AnimatePresence>
@@ -405,6 +476,7 @@ export default function DashboardPage() {
           <FormOverlay 
             type={activeForm} 
             onClose={() => setActiveForm(null)} 
+            onRefresh={handleRefresh}
           />
         )}
       </AnimatePresence>
@@ -523,7 +595,17 @@ function EmptyState({ tab }: { tab: Tab }) {
   );
 }
 
-function DetailOverlay({ item, onClose }: { item: SelectedItem; onClose: () => void }) {
+function DetailOverlay({ 
+  item, 
+  onClose, 
+  onVote, 
+  onHelpful 
+}: { 
+  item: SelectedItem; 
+  onClose: () => void;
+  onVote: (id: string, current: number) => void;
+  onHelpful: (id: string, current: number) => void;
+}) {
   if (!item) return null;
   const config = tabConfig[item.type as Tab];
 
@@ -578,7 +660,12 @@ function DetailOverlay({ item, onClose }: { item: SelectedItem; onClose: () => v
               <div className="pt-8 border-t border-slate-100 flex items-center justify-between">
                 <div className="text-sm font-bold text-slate-900">Was this helpful?</div>
                 <div className="flex gap-2">
-                  <button className="px-4 py-2 rounded-lg border border-slate-200 text-xs font-bold hover:bg-slate-50 transition-all flex items-center gap-2"><ThumbsUp className="h-4 w-4 text-amber-500" /> Yes</button>
+                  <button 
+                    onClick={() => onHelpful(item.data.id, item.data.helpful_count || 0)}
+                    className="px-4 py-2 rounded-lg border border-slate-200 text-xs font-bold hover:bg-slate-50 transition-all flex items-center gap-2"
+                  >
+                    <ThumbsUp className="h-4 w-4 text-amber-500" /> Yes
+                  </button>
                   <button className="px-4 py-2 rounded-lg border border-slate-200 text-xs font-bold hover:bg-slate-50 transition-all">No</button>
                 </div>
               </div>
@@ -657,7 +744,10 @@ function DetailOverlay({ item, onClose }: { item: SelectedItem; onClose: () => v
                 </div>
               </div>
               <div className="pt-6 border-t border-slate-100">
-                <button className="w-full py-3 bg-violet-600 hover:bg-violet-700 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2">
+                <button 
+                  onClick={() => onVote(item.data.id, item.data.votes)}
+                  className="w-full py-3 bg-violet-600 hover:bg-violet-700 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2"
+                >
                   <TrendingUp className="h-4 w-4" /> Upvote this Idea
                 </button>
               </div>
@@ -718,8 +808,71 @@ function DetailOverlay({ item, onClose }: { item: SelectedItem; onClose: () => v
   );
 }
 
-function FormOverlay({ type, onClose }: { type: Tab; onClose: () => void }) {
-  const config = tabConfig[type];
+function FormOverlay({ type, onClose, onRefresh }: { type: Tab; onClose: () => void; onRefresh: () => void }) {
+  const { profile, supabase } = useAuth();
+  const config = tabConfig[type as Tab];
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!title || !content || !profile) return;
+    setIsSubmitting(true);
+
+    try {
+      let table = "";
+      let payload: any = {};
+
+      if (type === "knowledge") {
+        table = "knowledge_articles";
+        payload = { 
+          title, 
+          content, 
+          category: "sop", 
+          department_id: profile.department_id || "flight_ops",
+          author_id: profile.id,
+          status: "published",
+          view_count: 0,
+          helpful_count: 0
+        };
+      } else if (type === "innovation") {
+        table = "innovation_ideas";
+        payload = {
+          title,
+          description: content,
+          department_id: profile.department_id || "flight_ops",
+          submitted_by: profile.id,
+          status: "submitted",
+          estimated_impact: "medium",
+          votes: 0
+        };
+      } else if (type === "lessons") {
+        table = "lessons_learned";
+        payload = {
+          title,
+          summary: content,
+          department_id: profile.department_id || "flight_ops",
+          incident_date: new Date().toISOString().split('T')[0],
+          root_cause: "Under investigation",
+          corrective_action: "Pending review",
+          preventability: "partially_preventable",
+          created_by: profile.id
+        };
+      }
+
+      if (table) {
+        const { error } = await supabase.from(table).insert(payload);
+        if (error) throw error;
+        onRefresh();
+        onClose();
+      }
+    } catch (error) {
+      console.error("Submission failed:", error);
+      alert("Submission failed. Please check your connection.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
@@ -758,6 +911,8 @@ function FormOverlay({ type, onClose }: { type: Tab; onClose: () => void }) {
                 <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Title / Brief Description</label>
                 <input 
                   type="text" 
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
                   placeholder="Summarize your contribution..."
                   className="w-full h-12 px-4 bg-slate-100 border-none rounded-xl text-sm font-medium focus:ring-2 focus:ring-amber-500/20 outline-none transition-all" 
                 />
@@ -766,6 +921,8 @@ function FormOverlay({ type, onClose }: { type: Tab; onClose: () => void }) {
                 <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Full Content / Details</label>
                 <textarea 
                   rows={4} 
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
                   placeholder="Provide comprehensive details here..."
                   className="w-full p-4 bg-slate-100 border-none rounded-xl text-sm font-medium focus:ring-2 focus:ring-amber-500/20 outline-none transition-all resize-none"
                 />
@@ -773,9 +930,17 @@ function FormOverlay({ type, onClose }: { type: Tab; onClose: () => void }) {
            </div>
 
            <div className="flex gap-4 pt-4">
-             <button onClick={onClose} className="flex-1 py-3.5 text-sm font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition-all text-center">Cancel</button>
-             <button className={cn("flex-1 py-3.5 text-sm font-bold text-white rounded-xl shadow-lg transition-all text-center", type === "knowledge" ? "bg-amber-500 text-black shadow-amber-500/20" : type === "experts" ? "bg-blue-600 shadow-blue-500/20" : type === "innovation" ? "bg-violet-600 shadow-violet-500/20" : "bg-rose-600 shadow-rose-500/20")}>
-               Submit Contribution
+             <button disabled={isSubmitting} onClick={onClose} className="flex-1 py-3.5 text-sm font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition-all text-center">Cancel</button>
+             <button 
+              disabled={isSubmitting || !title || !content}
+              onClick={handleSubmit}
+              className={cn(
+                "flex-1 py-3.5 text-sm font-bold text-white rounded-xl shadow-lg transition-all text-center flex items-center justify-center gap-2", 
+                type === "knowledge" ? "bg-amber-500 text-black shadow-amber-500/20" : type === "experts" ? "bg-blue-600 shadow-blue-500/20" : type === "innovation" ? "bg-violet-600 shadow-violet-500/20" : "bg-rose-600 shadow-rose-500/20",
+                (isSubmitting || !title || !content) && "opacity-50 cursor-not-allowed"
+              )}
+             >
+               {isSubmitting ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : "Submit Contribution"}
              </button>
            </div>
         </div>

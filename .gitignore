@@ -42,8 +42,11 @@ next-env.d.ts
 
 # User requested ignores
 AGENTS.md
-Analysis of the Current KM.md
 CLAUDE.md
+scripts/
+docs/
+q-dev-chat-2026-04-22.md
+Analysis of the Current KM.md
 Implementation_Plan.md
 Instructions.md
 KM.md
